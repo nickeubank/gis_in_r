@@ -1,0 +1,300 @@
+---
+title: "Making maps in R"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+apikey <- "be1fc5cfc4d04d64a2e305ade21eb7d2" #for cloudmade
+```
+
+R comes wiht a basic `plot` command, which can also be used for simple map viewing. In this workshop we will will look into two difdferent options to map spatial data in R. `sp` comes with a more refined plot command `spplot`, which takes `Spatial*~` objects. Secondly, there is `ggplot`, a more general purpose plotting library, but very powerful and one can make great maps. An additional package `ggmap` builds on `ggplot` and allows to draw in tiled basemaps from different services.
+
+Libraries needed for this section are:
+
+* sp
+* rgdal
+* classInt
+* RColorBrewer
+* ggplot2
+* hexbin
+* ggmap
+* XML
+* dplyr
+
+[Here is a little script](https://www.dropbox.com/s/3tlcr0fxr297h67/installWS4Libs.R?dl=1) that checks if you have these libraries, installs them if you don't, then loads them all into memory. You can just open it and run it in Rstudio and you should be ready to go.
+
+
+Data needed:
+
+* Shapefile of Philadelphia Census Tracts: [Philly2.zip](https://www.dropbox.com/s/pzsx62zljs8b9um/Philly2.zip?dl=1) (new attributes added)
+* Table with Lat/Long for Philadelphia Homicides: [PhillyHomicides.csv](https://www.dropbox.com/s/g9wi5a3ntuwd3q3/PhillyHomicides.csv?dl=1)
+
+If you haven't already, create a directory `R_Workshop` on your Desktop. Then set `R_Workshop` as your working directory in R Studio (Session > Set Working Directory > Choose Directory..), and download the files above.
+
+# 1. Choropleth maps
+
+***
+### Exercise 1
+
+Read the `Philly2` shapefile into an object named `philly`
+
+View the attributes with `names(philly)`.
+
+I have added the following attribute fields:
+
+* _N_HOMIC_: Number of homicides (since 2006)
+* _HOMIC_R_: homicide rate per 100,000 (Philadelphia Open Data)
+* _PCT_COL_: % 25 years and older with college or higher degree[^1] (ACS 2006-2010)
+* _mdHHnc_: estimated median household income (ACS 2006-2010)
+
+[^1]: Higher degrees are: Associate's, Bachelor's, Master's, Professional school, Doctorate
+
+
+You can plot the outline of the map with:
+
+```{r eval=FALSE}
+plot (philly)
+```
+
+Now let us use the plot command that comes with the `sp` package:
+
+```{r eval=FALSE}
+spplot(philly)
+```
+
+Not particularly useful for any interpretation.
+
+You can see that by default `spplot` tries to map everything it can find in the attribute table. Sometimes, this does not even work, depending on the data types in the attribute table. It also uses one classification for all the maps. (The latter actually makes sense, as otherwise you'd be likely to compare apples with oranges.)
+
+In order to only map one or several specific attributes we can give `spplot` the explicit attribute name (or names). Try this:
+
+```{r eval=FALSE}
+spplot(philly,"HOMIC_R")
+# or
+spplot(philly,c("HOMIC_R", "PCT_COL"))
+```
+
+Let us stick with one map now and try to improve it a little. First we want to change the color palette. For this we use a library called `RColorBrewer`[^2]. For more about ColorBrewer palettes read [this](http://colorbrewer2.org).
+
+To make the color palettes from ColorBrewer available as R palettes we use the `brewer.pal` command: 
+
+```{r eval=FALSE}
+# Load the library
+library(RColorBrewer)
+
+# to explore, display all sequential color schemes now available
+display.brewer.all(type="seq")
+
+# now let's use one of them, called OrRd
+pal <- brewer.pal(7, "OrRd") # we select 7 colors from the palette
+spplot(philly,"HOMIC_R", col.regions=pal, cuts = 6) 
+
+```
+In this example we select 7 colors from the palette and we tell `spplot` to give us 6 breaks (cuts) to make the colors match up with the class brackets.
+
+[^2]: This is not the only way to provide color palettes. You can create your customized palette in many different ways or simply as a vector of hexbin color codes, like `c( "#FDBB84" "#FC8D59" "#EF6548")`.
+
+Looks better already. But we still have this one area standing out with an extremely high homicide rate, which really makes the remainder of the map hard to discern. So let's change the class intervals. We will use the `classInt` library to help us out.
+
+We will choose quantiles and here are the steps to determine the breaks[^3].
+
+```{r eval=FALSE}
+library(classInt)
+
+# determine the breaks
+breaks.qt <- classIntervals(philly$HOMIC_R, n = 7, style = "quantile")
+
+# add a very small value to the top breakpoint, and subtract from the bottom for symmetry 
+br <- breaks.qt$brks 
+offs <- 0.0000001 
+br[1] <- br[1] - offs 
+br[length(br)] <- br[length(br)] + offs 
+
+# plot
+spplot(philly,"HOMIC_R", col.regions=pal, at=br)
+```
+
+![Philly Homicides - spplot version](images/Choro_spplot.png)
+
+[^3]: For the correction of breaks after using classIntervals with spplot/ levelplot see here http://r.789695.n4.nabble.com/SpatialPolygon-with-the-max-value-gets-no-color-assigned-in-spplot-function-when-using-quot-at-quot-r-td4654672.html
+
+Let's leave it at that for now. Feel free to experiment with mapping other variables.
+
+***
+
+
+# 2. Mapping density with hexbins
+
+[`ggplot2`](http://ggplot2.org/) is a powerful plotting library for R. It is not specifically geared towards mapping, but one can generate great maps. 
+
+`ggplot()` works with layers, that are added with a `+`, which allows you to superimpose either different visualizations of one dataset (e.g. a scatterplot and a fitted line) or different datasets (like different layers of the same geographical area). However, note that those layers are not exactly equivalent to GIS layers, as other parameters, loke for example statistical summaries, or plot layout options also are added with a `+`.
+
+As an alternative approach to above we will map homicides not by census tracts, but by [evenly sized hexagons](https://www.mapbox.com/blog/binning-alternative-point-maps/).
+
+***
+### Exercise 2
+```{r eval=FALSE}
+library(ggplot2)
+library(hexbin)
+```
+
+Let's begin by reading `PhillyHomicides.csv` into a dataframe and name it `homicides`.
+
+Use `head(homicides)` to check out what your dataframe looks like and note the two columns that store the latitude and longitude and how they are named.
+
+Now we can plot homicide locations with `ggplot` like this:
+```{r eval=FALSE}
+ggplot(homicides, aes(POINT_X, POINT_Y)) +  
+    stat_binhex() +  
+    scale_fill_gradientn(colours=c("white","red"),name = "Frequency")
+```
+
+Nice, huh.
+
+***
+
+Important to note is that `ggplot()` expects a __dataframe__ as argument. So if we wanted to plot the equivalent to the map we created with `spplot` above we need to convert `philly`, which is a `SpatialPolygonsDataframe` to a dataframe. We use the `fortify` command for this[^4].
+
+Unfortunately `fortify` will make us loose the attributes, so we have to join them back in (using as before `left_join` from `dplyr`).
+
+[^4]:Note that `fortify` requires the `rgeos` package installed, which currently is not available as Mac Binary, so it needs to be compiled manually. Also the GEOS library needs to be installed. For those with Yosemite try this: download my compiled version [here](https://www.dropbox.com/s/wtoyjkq70sw0cse/rgeos.zip?dl=0) extract and put in /Users/[YourUserName]/Library/R/3.1/library.)
+
+```{r eval=FALSE}
+library(dplyr)
+
+# create a unique ID for the later join
+philly@data$id = rownames(philly@data)
+
+# turn SpatialPolygonsDataframe into a data frame
+# (note that the rgeos library is required to use fortify)
+philly.pts <- fortify(philly, region="id") #this only has the coordinates
+philly.df <- left_join(philly.pts, philly@data, by="id") # add the attributes back in
+
+# calculate quantile breaks
+philly.df$qt <- cut(philly.df$HOMIC_R, 
+    breaks = quantile(philly.df$HOMIC_R, probs = 0:7/7, na.rm = TRUE), 
+    include.lowest = TRUE)
+
+# plot  
+ggplot(philly.df, aes(long,lat,group=group, fill=qt)) + # the data
+  geom_polygon() + # make polygons
+  scale_fill_brewer("Homicide Rate", palette = "OrRd") + # fill with brewer colors
+  theme(line = element_blank(),  # remove the background, tickmarks, etc
+        axis.text=element_blank(),
+        axis.title=element_blank(),
+        panel.background = element_blank()) +
+  coord_equal()
+```
+
+![Philly Homicides - ggplot version](images/Choro_ggplot.png)
+
+# 3. Using basemaps
+
+`ggmap` is a package that allows for the easy visualization of spatial data and models on top of Google Maps and OpenStreetMaps[^5]. The `ggmap` library also includes functions for distance calculations, geocoding, calculating routes and more.
+
+In this example we will create a heat map from the homicide points and overlay them over a google basemap.
+
+First we use the `get_map` command to pull down the basemap. We need to tell it the location or the boundaries of the map, the zoom level, and what kind of map service we like (default is Google terrain).
+
+In a second step we use `ggmap`, which takes the basemap we have retrieved and add the layers we want on top.
+
+***
+### Exercise 3
+```{r eval=FALSE}
+library(ggmap)
+
+# get the basemap
+phBasemap <- get_map(location="Philadelphia, PA", zoom=12, maptype = 'satellite')
+
+# take a look
+ggmap(phBasemap)
+
+# plot with heatmap
+ggmap(phBasemap) + 
+    # make the heatmap
+    stat_density2d(aes(x = POINT_X, 
+                     y = POINT_Y, 
+                     fill = ..level.., # value corresponding to discretized density estimates 
+                     alpha = ..level..),
+                     bins = 25,  # number of bands
+                     data = homicides, 
+                     geom = "polygon") +  # creates the bands of differenc dolors
+    ## Configure the colors, transparency and panel
+    scale_fill_gradient(low = "yellow", high = "red") +
+    scale_alpha(range = c(.25, .55)) + 
+    theme(legend.position="none")
+
+```
+
+***
+
+[^5]: Note that the use of Stamen Maps currently only works with a patch and that Cloudmade maps retired its API so it is no longer possible to be used as basemap. [`RgoogleMaps`](http://cran.r-project.org/web/packages/RgoogleMaps/index.html) is another library that provides an interface to query the Google server for static maps.
+
+
+# 4. Webscraping for maps
+
+Now for fun. We will retrieve a table from the [Wikipedia page on Crime statistics U.S. cities with a population of 250,000 or greater](http://en.wikipedia.org/wiki/List_of_United_States_cities_by_crime_rate#Crime_rates_per_100.2C000_people_.282012.29). 
+We will use the city names, geocode their locations and plot the cities by population and crime rate.
+
+You should be able to run the code below as is. (Be aware that you are retreiving data over the internet, so it may take a little while.)
+
+***
+### Exercise 4
+```{r eval=FALSE}
+library(XML)
+library(ggmap)
+library(dplyr)
+library(RCurl)
+
+# read in the data
+url <- "https://en.wikipedia.org/wiki/List_of_United_States_cities_by_crime_rate_(2012)"
+# we want the first table: which=1
+citiesCR <- readHTMLTable(getURL(url), which = 1, stringsAsFactors = FALSE)
+
+# clean up (with mutate_each function from dplyr): 
+# remove the comma in 1,000 and above and convert numbers from strings to numeric
+citiesCRclean <- mutate_each(citiesCR, funs(as.numeric(gsub(",", "", .))),  -(State:City))
+ 
+# geocode loations
+latlon <- geocode(paste(citiesCRclean$City, citiesCRclean$State, sep=", "))
+
+# combine into a new dataframe
+citiesCRll <- data.frame(citiesCRclean, latlon)
+
+#get basmap
+map_us <- get_map (location='United States', zoom=4, color="bw")
+
+# plot
+ggmap(map_us, legend='bottomright', extent='device') +
+  geom_point(data=citiesCRll,
+            aes(x=lon, y=lat, 
+            color=Violent.Crime, 
+            size=Population)) +
+  scale_colour_gradient(low="white", high="red") +
+  scale_size_continuous(range = c(4,12))
+
+```
+
+![2012 Violent Crime Rates in largest US cities (from Wikipedia)](images/osmCrimeMap.png)
+

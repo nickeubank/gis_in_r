@@ -1,0 +1,398 @@
+---
+title: "Introduction to R"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+#library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+               cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+```
+
+## 1. Installation of R, RStudio, and R libraries 
+Please [install R](http://cran.us.r-project.org/).
+
+Please install the latest Preview version of [RStudio](http://www.rstudio.com/products/rstudio/download/preview/).
+
+
+### Installing additional packages
+
+R comes with a base system and some contributed packages. This is what you just downloaded. The functionality of R can be significantly extended by using additional contributed packages, also called __libraries__. Those packages typically contain commands (functions) for more specialized tasks. They can also contain example datasets. We will make use of a series of external packages to work with spatial data later.
+
+To install additional packages there are two main options:
+
+1. You can use the RStudio interface like this:
+
+![alt text](images/installpckg1.png)
+![alt text](images/installpckg2.png)
+
+2. You can install from the R commandline like this:
+
+```{r eval=FALSE}
+install.packages("NameOfTheLibraryToInstall", dependencies = TRUE)
+```
+
+### Make use of the installed packages
+
+In order to actually use commands from the installed packages you also will need to load the installed packages. This can be automated (whenever you launch R it will also load the libraries for you - see for example [here](http://stackoverflow.com/a/14238658/2630957)) or otherwise you need to sumbit a command:
+
+```{r eval=FALSE}
+library(NameOfTheLibraryToLoad)
+```
+or
+```{r eval=FALSE}
+require(NameOfTheLibraryToLoad)
+```
+
+The difference between the two is that `library` will result in an error, if the library does not exist, whereas `require` will result in a warning.
+
+**** 
+#### Exercise 1
+1. Launch RStudio
+2. Find the Console window, type in the following line, hit enter and see what happens.
+```
+volcano.r <- raster(volcano); spplot(volcano.r)
+```
+3. Install the R package called `raster`, including its dependencies 
+4. Load the library and observe the message you receive
+5. Use the `"up" arrow` on your keyboard to recall the line that you last typed in and hit enter
+
+****
+## 2. Overview of the RStudio environment and main features 
+RStudio is a development environment that makes working with R easier. In order to use it you need to also have R installed (which we did above). These are two independent software pieces, however they work together seamlessly. When launching RStudio it automatically detects your R installation and starts it up as well.
+
+Some features of RStudio:
+
+* main windows panes
+* executing code
+* working directories
+* history
+* packages
+* completion
+* help
+* ...
+
+[ Demo ]
+
+## 3. R syntax, basic data structures, how to read data in
+
+### Vector
+Here is how you assign a value to a variable. Variable names cannot contain spaces and they cannot begin with a dot followed by a number. For example, `The Moon` and `.2TheMoon` will not work. `.ToTheMoon` will work, but is not recommended. (To find reserved words in R type `?reserved` in your console or search for `reserved` in the help).
+
+```{r}
+x <- 14 # x = 14 also works, but some feel strongly that it should not be used and this is a comment, BTW
+```
+(Tip: Use `Alt` and `-` as shortcut for `<-` on a Mac.)
+
+Here is how you retrieve the value from a variable:
+
+```{r}
+x
+```
+Variable names are case sensitive. `Thevariable` is not the same as `thevariable` which is not the same as `theVariable`! Try the commands below and see that happens.
+(Tip: Concatenate commands in one line with a semicolon: `;`)
+```
+myvar <- .37; myvar
+myVar <- "dog"; myvar
+```
+(Most common) data types in R are: 
+
+* logical, 
+* integer, 
+* double (often called numeric), and 
+* character. 
+
+The `typeof()` command tells you the data type of an object.
+
+```{r}
+typeof(x)
+```
+Even though `x` contains only one value, in R it is called a "vector".
+
+Now let's construct some longer vectors in R. One common way to do this is to use a function called `c()`. This is how it's done:
+```{r}
+a <- c(1,2,5.3,6,-2,4) # numeric vector
+b <- c("one","two","three") # character vector
+c <- c(TRUE,TRUE,TRUE,FALSE,TRUE,FALSE) #logical vector
+```
+A convenient command to find out about the structure of a object is `str()`. For example:
+
+```{r}
+str(c)
+```
+
+And note that `c` in this example is the name of a vector, but that `c` is also the name of the function used to construct a vector. OUCH. It works, but is confusing. So avoid it.
+
+Now try this and see what happens here:
+````
+d <- c("a", 1); str(d)
+````
+
+__Subsetting__:  
+
+Oftentimes we want to select one or several elements from a vector. This is called subsetting. Below are a few examples.
+
+```{r}
+a[1]      # note that in R the first position in the index is 1, not 0!
+a[-1]     # all except the first element
+a[c(2,4)] # 2nd and 4th elements of vector
+a[2:4]    # from 2nd to 4th element
+a[a > 5]  # this is sometimes convenient
+```
+
+We can do math with vectors:
+
+```{r}
+a + 1
+a * a
+```
+> When the vectors operated upon are of unequal lengths, then the shorter vector is __"recycled"__ as often as necessary to match the length of the longer vector. If the vectors are of different lengths because of a programming error, this can lead to unexpected results. But sometimes recycling of short vectors is the basis of clever programming. 
+
+Here is an example.
+```{r}
+e <- c(1,10)
+a * e
+```
+
+Now let's try to understand what happens here.
+```{r}
+a[c(TRUE, FALSE)]
+```
+
+### Matrix
+If we arrange data elements of a vector in a two-dimensional rectangular layout we have a matrix. To construct a matrix, we use a function conveniently called `matrix()`.
+
+```{r eval=FALSE}
+y <- matrix(1:20, nrow=5,ncol=4) # generates 5 x 4 numeric matrix
+```
+
+Subset a matrix with [row `,` column]:
+
+```{r eval=FALSE}
+y[,4]       # 4th column of matrix
+y[3,]       # 3rd row of matrix
+y[2:4,1:3]  # rows 2,3,4 of columns 1,2,3
+```
+
+> Not surprisingly 2-dimensional matrices play an important role when working with raster data. We will come back to that at a later time.
+
+### List
+Lists can have elements of any type. Here is how we construct lists. You may have guessed that to construct a list, we use the `list()` function:
+
+```{r eval=FALSE}
+myl <- list(name="Sue", mynumbers=a, mymatrix=y, age=5.3) # example of a list with 4 components
+
+myl[[2]] # 2nd component of the list
+myl[["mynumbers"]] # component named mynumbers in list
+```
+
+> Lists will be important as they are used to construct vector data of the `sp*` type in R. This sounds forgeign to you now, but you will see this shortly.
+
+### Data frame
+A data frame is the most common way of storing tabular data in R and something you will likely deal with a lot. For example, attribute data for vector based spatial objects in R are stored as a data frame. You can really think of it as a table or a spreadsheet. It a 2-dimensional structure and columns can be of different element types.
+
+Here is how you could construct a data frame.
+```{r}
+mydf <- data.frame(ID=c(1:4),
+                   
+                   Color=c("red", "white", "red", NA),
+                   
+                   Passed=c(TRUE,TRUE,TRUE,FALSE),
+                   
+                   Weight=c(99, 54, 85, 70),
+                   
+                   Height=c(1.78, 1.67, 1.82, 1.59))
+
+mydf
+```
+
+And subsetting it (try the following commands yourself):
+
+```
+mydf$Weight               # Weight column
+mydf[c("ID","Weight")]    # columns ID and Weight
+mydf[,2:4]                # columns 2,3,4 of dataframe
+mydf[mydf$Height > 1.8,]  # use logical conditions to filter rows
+mydf[mydf$Passed,]    
+```
+
+A useful command to look at the top rows of a data frame is `head()`. Column names can be either retrieved or assigned with  `names()`.  We can also assign row names with `rownames()`. 
+
+We can easily create a new column in a data frame, calculated from existing columns, for example: 
+
+```{r}
+mydf$bmi <- mydf$Weight/mydf$Height^2
+mydf
+```
+
+### A word about using functions in R
+
+By now we have used several R `functions`. I have also -sloppily, perhaps- called them `commands`. They all have in common that they are executed by typing their name followed by round brackets, in which we provide one or more parameters (or arguments) for the function to do something, separated by commas. Each function requires their specific arguments and those can be looked up with the help and all the arguments have names. 
+
+As example let us revisit the `matrix()` function from above. If you [look up the documentation](https://stat.ethz.ch/R-manual/R-devel/library/base/html/matrix.html), this is what you will find under the usage section: 
+
+```
+matrix(data = NA, nrow = 1, ncol = 1, byrow = FALSE,
+       dimnames = NULL)
+```
+
+Now, here is what we said earlier:
+```
+matrix(1:20, nrow = 5, ncol = 4)
+```
+
+So you can see that we have not consistently named our parameters, but R still knows what we want[^1]. The reason is that R evaluates function arguments in three steps: first, by _exact matching_ on argument name, then by _partial matching_ on argument name, and finally by _position_. 
+
+[^1]: It is strongly discouraged to omit argument names when you actually write programs in R.
+
+A second thing to notice is that often you _do not have to_ specify all of the arguments. If you don't, R will use default values if they are specified by the function. If no default value is specified, you will receive an error.
+
+Functions usually return someting back to you as output. Whatever they return (a table, some informational text, a logical value, ...) is by default written to the console, so you can see it right away.
+
+Oftentimes, however, we want re-use the output of such a function. This is what we did above with the matrix example and this is also what we will now do to read in some data.
+
+
+### Read data into R
+
+One the most common ways of getting data into R is to read in a table. And -- you guessed it -- we read it into a data frame! The function we will use for this is `read.csv()`. We will take a simple CSV file as example. 
+
+[What is a CSV file?](https://support.bigcommerce.com/articles/Public/What-is-a-CSV-file-and-how-do-I-save-my-spreadsheet-as-one)
+
+****
+#### Exercise 2
+
+1. Create a new directory `R_Workshop` on your Desktop. 
+2. Download and unzip [table_10.zip](https://www.dropbox.com/s/obkdsdgz088l6ad/table_10.zip?dl=1) in this directory.
+3. Set your working directory to  `R_Workshop`:
+
+![alt text](images/setWD.png)
+
+4. Load `table_10.csv`[^2] into R and assign it to a data frame calle `dfm`.(Hint: Use the help tab in RStudio to search for the command and find the exact syntax)
+5. _OPTIONAL:_ Try to use the `read.table()` function. What is different?
+6. Check out the column names
+7. Look at the first few rows to see if you like what you did
+8. How would you retreive all records for "New England"?
+9. Using the columns with `totalpop` and `totalIL` calculate the percentage of the illiterate population, call it `pctIL` and add it as a new column to the data frame.
+10. _FOR FUN:_
+```{r eval=FALSE}
+dColors <- data.frame(division = levels(dfm$division), color = rainbow(nlevels(dfm$division)))
+dfm.col <- merge(dfm, dColors)
+dfm.ord <- dfm.col[order(dfm.col$pctIL),]
+barplot(dfm.ord$pctIL, names.arg = dfm.ord$state, horiz = TRUE, las=2, cex.names = 0.5, col=dfm.ord$color)
+legend("bottomright", legend = dColors$division, fill = dColors$color)
+```
+
+
+[^2]: Manfred te Grotenhuis, Rob Eisinga, and SV Subramanian: Robinson's Ecological Correlations and the Behavior of Individuals: methodological corrections. International journal of epidemiology. Data Source: U.S. Census Bureau (1933). Fifteenth Census of the United States: 1930. Population, Volume II, General Report. Statistics by Subjects, Chapter 13, Page 1229: 
+Table 10.-Illiteracy in the population 10 years old and over, by color and nativity, by divisions and states: 1930. Retrieved October, 2010 [http://www2.census.gov/prod2/decennial/documents/16440598v2ch16.pdf].
+
+
+****
+
+## 4. Overview of some convenient data manipulation tools 
+
+### reshape
+`reshape2` is an external library. It contains two functions that help to  transform data tables between __wide__ and __long__ formats. 
+
+A table in wide format there is a column for each variable and it looks like this:
+
+```{r echo=FALSE}
+#wide.df <- data.frame(subject=c("Adele", "Adele"), age=c(20, 21), height=c(1.76, 1.77, weight=c(85, NA)))
+wide.df <- data.frame(subject=c("Adele", "Adele"), age=c(20, 21), height=c(1.76, 1.77))
+wide.df
+```
+
+A table in long format there is at least one column for the so called "ID variables", a column for possible variable types and a column for the values of those variables. For the above table would look like this using `subject` as the ID variable:
+
+```{r echo=FALSE}
+library(reshape2)
+melt(wide.df, id.vars = "subject")
+```
+
+While we perhaps tend to record data in wide format, in R long-format data often needed, for example when plotting with `ggplot`.
+
+__`melt`__ turns wide format into long format.  
+__`cast`__ turns long format into wide format. 
+
+So for the above example the command 
+
+```{r}
+
+wide.df <- data.frame(subject=c("Adele", "Adele"), # some sample data in wide format
+                      age=c(20, 21), 
+                      height=c(1.76, 1.77))
+
+melt(wide.df) # convert to long format
+```
+
+By default `melt()` uses all columns that have numeric values as variables for the values. But we could also tell it otherwise, for example:
+
+```{r}
+melt(wide.df, id.vars = c("subject", "age"))
+```
+
+This is another possible long format for our table above!
+
+Now let's save this long format to a variable and cast it back into wide format. There are actually several commands for this, we will use `dcast()` as it produces a data frame as output, which is what we most typially want. Input variables for `dcast()` are: the data frame, and a formula for the ID variables and the values. 
+
+```{r}
+long.df <- melt(wide.df, id.vars = c("subject", "age"))
+dcast(long.df, subject + age ~ variable) 
+```
+
+This is one of the simplest cases. Typically going from long to wide data tables takes a bit more tinkering as there are a number of more advanced options as you can see in the help. 
+
+***
+#### Exercise 3 (Optional)
+1. Install and load the `reshape2` package.
+2. Use the data frame `dfm` you created earlier (from `table_10.csv`)
+3. Select the first four columns and save them into a new data frame `dfm.select`
+4. Convert the selection from wide to long format, using `state` and `division` as ID variables and save into a new data frame `dfm.long`
+
+***
+
+### More..
+Just to mention two more packages that can be helpful with data wrangling.
+
+[`tidyr`](http://blog.rstudio.org/2014/07/22/introducing-tidyr/) is a package similar to `reshape2`, with extended functionality. It can transform between long and short form and has some additional convenient functionalities, like renaming, concatenating and separating columns.
+
+[`dplyr`](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html) is a package that makes working with tables a little easier. In addition to simple operations like filtering, reordering of colums, selecting unique values, one can connect directly to databases. Most conveniently it also has a set of grouping functions that allow to calculate statistics for subgroups of the entire dataset. This is how it works:
+
+1. split up the original data in subgroups,
+2. apply an operate on those subgrouops, and
+3. combine the results back into a table.
+
+This process is accordingly called __split-apply-combine__ and illustrated below.
+
+![Split - Apply - Combine. From Karthik Ram 2012: Introduction to R (http://inundata.org/2012/04/05/an-intro-to-r/)](http://inundata.org/R_talks/meetup/images/splitapply.png)
+
+We will use the dataframe we created earlier in long format `dfm.select` for an example. We want to calculate the percentage Illiterate per division, not per state as we did above. Following the recipe from above we would:
+
+1. split the data into divisions
+2. calculate percentage for each of those
+3. combine all back into a table
+
+```
+library(dplyr)
+by_division <- group_by(dfm.select, division)
+summarise(by_division, pct = sum(totalIL)/sum(totalpop)*100)
+```
+The end. For today.
+
