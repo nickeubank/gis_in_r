@@ -1,0 +1,78 @@
+\documentclass[10pt]{article} 
+\usepackage{amsfonts, amsmath, amssymb} 
+\usepackage{dcolumn, multirow} 
+\usepackage{setspace} 
+\usepackage{epsfig, subfigure, subfloat, graphicx}
+\usepackage{tabularx} 
+\usepackage{anysize, indentfirst, setspace} 
+\usepackage{verbatim, rotating, paralist}
+\usepackage{latexsym} 
+\usepackage{amsthm} 
+\usepackage{fullpage} 
+\usepackage{longtable} 
+\usepackage{graphicx} 
+\usepackage{mathabx} 
+\usepackage{txfonts} 
+\usepackage{amsfonts} 
+\usepackage{parskip} 
+\usepackage{stmaryrd} 
+\usepackage{mathrsfs} 
+\usepackage{dsfont} 
+\usepackage{comment} 
+\usepackage{url} 
+\usepackage{rotating} 
+\usepackage{appendix}
+\usepackage{natbib} 
+\usepackage{tablefootnote}
+\usepackage{hyperref}
+\usepackage{multicol}
+\setlength{\columnsep}{1cm}
+\usepackage{enumitem}
+\setlist[itemize]{noitemsep, topsep=0pt}
+\setlist[enumerate]{noitemsep, topsep=0pt}
+\usepackage[margin=2.5cm]{geometry}
+
+\title{GIS in R Command Cheat Sheet}
+\date{\today}
+
+
+\begin{document} 
+\maketitle
+% \begin{multicols}{2}
+	
+\hrulefill \\ 
+\centerline{\textbf{Installing}}
+Update R to version $>$ 3.1.
+On Windows:
+\begin{itemize}
+	\item \texttt{install.packages(c(``sp'',``raster''))}
+	\item \texttt{install.packages(``rgdal'')}
+\end{itemize}
+On OSX:
+	\begin{itemize}
+		\item \texttt{install.packages(c(``sp'',``raster''))}
+		\item Download and install 	\href{http://www.kyngchaos.com/files/software/frameworks/GDAL_Complete-1.11.dmg}{\underline{GDAL Complete}}
+		\item Download \href{http://www.kyngchaos.com/files/software/frameworks/rgdal-0.9.1-1.dmg}{\underline{rgdal}} package. 
+		\item Open .dmg file and place \texttt{rgdal\_0.9-1.tgz} on desktop.
+		\item Run \texttt{install.packages("$\sim$/Desktop/rgdal\_0.9-1.tgz",repos=NULL)}
+	\end{itemize}
+
+\hrulefill \\ 
+\centerline{\textbf{Creating Spatial Objects}} \\
+\underline{\textbf{POINTS:}}\\
+\textbf{Points}: \texttt{SpatialPoints([ matrix of coordinates] )}\\
+\textbf{Points with DF}: \texttt{SpatialPointsDataFrame([Spatial Points Obj] , [ DataFrame] )}\\
+\\
+\underline{\textbf{POLYGONS:}}\\
+\textbf{Polygon}: \texttt{Polygon([matrix of coordinates of vertices])}\\
+\textbf{Collection of Polygons}: \texttt{Polygons([list of Polygon Objs], [names for Polygons])}\\
+\textbf{Collection of SPATIAL Polygons}: \texttt{SpatialPolygons([list of Polygon\textbf{s} Objs], [names for Polygons])}
+\begin{itemize}
+	\item \emph{Spatial Polygons are Polygons with associated projection data}
+\end{itemize}
+\textbf{Spatial Polygons with DF}:\texttt{SpatialPolygonsDataFrame([SpatialPolygons Obj, dataframe])}
+%\end{multicols}
+
+
+
+\end{document}
