@@ -197,9 +197,11 @@ A `SpatialPointsDataFrame` object can be created directly from `data.frames` by 
 4. Use `read.csv()` to read `PhiladelphiaZIPHousing.csv` into a dataframe in R and name it `ph.df`.
 5. Use `head()` to examine the first few lines of the dataframe.
 6. Use `class()` to examine which object class the table belongs to.
-7. Convert the table into a spatial object with:
+7. Convert the table into a spatial object using the `coordinates` command and passing the names of the columns in the table that correspond to longitude and latitude:
 
     `coordinates(ph.df) <- c("lon", "lat")`
+
+> Note the reverse order! While we usually say "latitude and longitude", since longitude corresponds to the x-coordinates on a map and latitude corresponds to the y-coodinates and R likes coordinates to be ordered (x,y), we pass `c("lon","lat")`!
 
 8. Use `class()`again to examine which object class the table belongs to now:  
 What to you observe?
@@ -212,16 +214,27 @@ What to you observe?
 
 Note that the Spatial object you just created __does not__ have a projection defined. It is ok to plot, but be aware that for any meaningful spatial operation you will need to define a projection. 
 
-10. This is how it's done:
+Projection objects can be created by passing the `CRS()` function the code associated with a known projection. You can find the codes for most commonly used projections from [www.spatialreference.org](www.spatialreference.org). 
+
+Note that the same project can often be called in many ways. For example, one of the most commonly used projections is the WGS84 latitude-longitude projection. You can create a WGS84 lat-long projection object by either passing the reference code for the projection --  `CRS("+init=EPSG:4326"`) -- or by directly calling all its relevant parameters -- `CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")`.
+
+10. Here's an illustration of assigning a projection:
 ```{r eval=FALSE}
 is.projected(ph.df) # see if a projection is defined  
-is.projected(ph.df) # voila
+crs.geo <- CRS("+init=EPSG:4326")  # geographical, datum WGS84
+proj4string(ph.df) <- crs.geo  # define projection system of our data
 ```
 
 ***
 
 
-The following example[^4] shows how a set of polygons are built from scratch. Note that the coordinates of the _Sr4_ polygon move in the opposite direction (anti-clockwise) than the other three (clockwise); it is meant to represent a hole in the _Sr3_ polygon. The default value for the hole colour is "transparent". Note that the Polygons objects have to be given character ID values, and that these values must be unique for `Polygons` objects combined in a `SpatialPolygons` object.
+The following example[^4] shows how a set of polygons are built from scratch. Polygons are built up from constituent parts, from `Polygon` objects to `Polygons` objects to `SpatialPolygons`. 
+
+`Polygons` are simple geometric shapes -- squares or rectangles -- defined by a single uninterrupted line around their exterior. `Polygons` are one *or more* simple geometric objects that are inextricably linked. For example, each island in Hawaii would be a `Polygon`, but Hawaii itself is the `Polygons` consisting of all the individual islands. In addition, if you want to make a donut-shape, you have to make two simple circles -- each a `Polygon` -- where the inner circle is labeled as a `hole`, then combine them in a `Polygons`. 
+
+Finally, you can gather a collection of `Polygons` (say, one for each state) into a `SpatialPolygons` object. If you're familiar with shapefiles, `SpatialPolygons` is basically the R analogue of a `shapefile`.
+
+Note that the coordinates of the _Sr4_ polygon move in the opposite direction (anti-clockwise) than the other three (clockwise); it is meant to represent a hole in the _Sr3_ polygon. The default value for the hole colour is "transparent". Note that the Polygons objects have to be given character ID values, and that these values must be unique for `Polygons` objects combined in a `SpatialPolygons` object.
 
 ```{r}
 # create polyon objects from coordinates
@@ -336,14 +349,18 @@ In `sp` the `GridTopology` class is the key element of raster representations[^5
 A simple grid can be built like this:
 
 ```{r}
-gtopo <- GridTopology(c(0,0), c(1,1), c(5,5)) # specify the grid topology
-datafr <- data.frame(runif(25)) # make up some data
+gtopo <- GridTopology(cellcentre.offset=c(0,0), cellsize=c(1,1), cells.dim=c(5,5)) # specify the grid topology
+datafr <- data.frame(1:25) # make up some data
 SpGdf <- SpatialGridDataFrame(gtopo, datafr) # create the grid
 summary(SpGdf)
 spplot(SpGdf, sp.layout = c('sp.points', SpatialPoints(coordinates(SpGdf))))
 ```
 
-In a similar fashion to the example above we can use `readGDAL` from the `sp` package to read in a raster file. It will require one parameter as a minimum, which is the filename of the raster. So let's do this.
+> Note even though a grid is a 2-dimensional object, `SpatialGridDataFrame()` looks for data that is one-dimensional, then assigns the values in the DataFrame by (a) starting in the top left cell, then (b) moving across the row from left to right, and finally (c) moving down a row and repeating the whole process. Thus each column must be the length of the total number of cells. 
+
+If `SpatialGridDataFrame()` is given a DataFrame with more than one column where each column has as many rows as the grid has cells, it will treat each column as a different dataset. This means a single raster could have multiple forms of data associated with each cell, like average rainfall and average temperature. 
+
+In a similar fashion to the example above we can use `readGDAL` from the `rgdal` package to read in a raster file. It will require one parameter as a minimum, which is the filename of the raster. So let's do this.
 
 ***
 

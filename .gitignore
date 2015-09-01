@@ -42,3 +42,10 @@ Thumbs.db
 *.out
 *.log
 *.synctex.gz
+
+# R Markup Cache files #
+####################
+*_files
+*_cache
+rsconnect
+

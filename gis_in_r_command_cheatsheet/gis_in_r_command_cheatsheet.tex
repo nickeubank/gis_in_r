@@ -3,33 +3,24 @@
 \usepackage{dcolumn, multirow} 
 \usepackage{setspace} 
 \usepackage{epsfig, subfigure, subfloat, graphicx}
-\usepackage{tabularx} 
 \usepackage{anysize, indentfirst, setspace} 
 \usepackage{verbatim, rotating, paralist}
 \usepackage{latexsym} 
 \usepackage{amsthm} 
 \usepackage{fullpage} 
-\usepackage{longtable} 
 \usepackage{graphicx} 
-\usepackage{mathabx} 
-\usepackage{txfonts} 
 \usepackage{amsfonts} 
-\usepackage{parskip} 
-\usepackage{stmaryrd} 
-\usepackage{mathrsfs} 
 \usepackage{dsfont} 
 \usepackage{comment} 
-\usepackage{url} 
-\usepackage{rotating} 
-\usepackage{appendix}
-\usepackage{natbib} 
-\usepackage{tablefootnote}
 \usepackage{hyperref}
 \usepackage{multicol}
+\usepackage{txfonts} 
+\usepackage{parskip} 
+
 \setlength{\columnsep}{1cm}
 \usepackage{enumitem}
-\setlist[itemize]{noitemsep, topsep=0pt}
-\setlist[enumerate]{noitemsep, topsep=0pt}
+\setlist{nosep}
+
 \usepackage[margin=2.5cm]{geometry}
 
 \title{GIS in R Command Cheat Sheet}
@@ -39,10 +30,20 @@
 \begin{document} 
 \maketitle
 % \begin{multicols}{2}
+
+%%%%%%%%%%
+% Installing
+%%%%%%%%%%
 	
-\section*{Vector Data}
-\centerline{\textbf{Installing}}
-Update R to version $>$ 3.1.
+\centerline{\textbf{Installation of Relevant Packages}}
+\textbf{Packages:}
+\begin{itemize}
+	\item \texttt{sp}: tools for spatial data of all types
+	\item \texttt{raster}: extra tools for very large raster datasets
+	\item \texttt{rgdal}: tools for reading and writing files in different formats
+\end{itemize}
+\textbf{Installation:}\\
+Update R to version $>$ 3.1.\\
 On Windows:
 \begin{itemize}
 	\item \texttt{install.packages(c(``sp'',``raster''))}
@@ -57,40 +58,118 @@ On OSX:
 		\item Run \texttt{install.packages("$\sim$/Desktop/rgdal\_0.9-1.tgz",repos=NULL)}
 	\end{itemize}
 
-\hrulefill \\ 
-\centerline{\textbf{Creating Spatial Objects}} \\
-\underline{\textbf{POINTS:}}\\
-\textbf{Points}: \texttt{SpatialPoints([ matrix of coordinates] )}\\
-\textbf{Points with DF}: \texttt{SpatialPointsDataFrame([Spatial Points Obj] , [ DataFrame] )}\\
-\\
-\underline{\textbf{POLYGONS:}}\\
-\textbf{Polygon}: \texttt{Polygon([matrix of coordinates of vertices])}\\
-\textbf{Collection of Polygons}: \texttt{Polygons([list of Polygon Objs], [names for Polygons])}\\
-\textbf{Collection of SPATIAL Polygons}: \texttt{SpatialPolygons([list of Polygon\textbf{s} Objs], [names for Polygons])}
+
+
+\section*{Vector Data}
+
+%%%%%%%%%%
+% Creating from Scratch
+%%%%%%%%%%
+
+\centerline{\textbf{Creating Spatial Objects From Scratch}} 
+\underline{\textbf{Points:}}\\
+\textbf{Points}: \texttt{SpatialPoints([matrix of coordinates])}
 \begin{itemize}
-	\item \emph{Spatial Polygons are Polygons with associated projection data}
+	\item Note: if latitude and longitude coordinates, must be ordered longitude (x-coordinate), latitude (y-coordinate)
 \end{itemize}
-\textbf{Spatial Polygons with DF}:\texttt{SpatialPolygonsDataFrame([SpatialPolygons Obj, dataframe])}
+\textbf{Points with DF}: \texttt{SpatialPointsDataFrame([Spatial Points Obj], [DataFrame])}\\
+\\
+\underline{\textbf{Polygons:}}\\
+\textbf{Polygon (basic shapes)}: \texttt{Polygon([matrix of coordinates of vertices])}\\
+\textbf{Polygons (single ``observations'' potentially consisting of several basic shapes)}:\\ 
+\hspace*{1cm} \texttt{Polygons([list of Polygon Objs], [names for Polygons])}\\
+\textbf{Collection of ``observations''}: \texttt{SpatialPolygons([list of Polygon\textbf{s} Objs], [names for Polygons])}
+\begin{itemize}
+	\item \emph{SpatialPolygons are the R analogue of a shapefile}
+\end{itemize}
+\textbf{Spatial Polygons with DF}: \texttt{SpatialPolygonsDataFrame([SpatialPolygons Obj, DataFrame])}
+
+
+%%%%%%%%%%
+% Load from Files
+%%%%%%%%%%
 
 \hrulefill \\ 
 \centerline{\textbf{Loading Spatial Objects from Files}} \\
+\underline{\textbf{GPS Coordinates in Table:}}\\
+\begin{enumerate}
+	\item Use \texttt{read.csv()} to import DataFrame with lat long coordinates.
+	\item \texttt{coordinates([DataFrame]) <- c([name of column with long],[name of column with lat])}
+	\begin{itemize}
+		\item Note reverse ordering: longitude (x-coordinate), then latitude (y-coordinate).
+	\end{itemize}
+\end{enumerate}
+\underline{\textbf{Vector-Based Files:}}\\
+\texttt{data <- readOGR(dsn=[path to FOLDER holding data], layer=[name of shapefile in folder])}
+\begin{itemize}
+	\item Note: do not include extension (like \texttt{.shp} in \texttt{layer} argument)
+\end{itemize}
 
-\[ fill in \]
+%%%%%%%%%%
+% Interrogating
+%%%%%%%%%%
 
 \hrulefill \\ 
 \centerline{\textbf{Interrogating Spatial Objects}} \\
+\underline{\textbf{Summaries:} }\\
 \textbf{Quick summary:} \texttt{summary([spatial\_object])}\\
 \textbf{Longer summary of contents:} \texttt{str([spatial\_object])}\\
 \textbf{Full list of contents:} \texttt{attributes([spatial\_object])}\\
 \textbf{Check if projected:} \texttt{is.projected([spatial\_object])}\\
 
-\underline{\textbf{EXTRACT ATTRIBUTES:} }\\
+\underline{\textbf{Extract Attributes:} }\\
 \textbf{Bounding Box:} \texttt{bbox([spatial\_object])}\\
 \textbf{Get full projection info:} \texttt{proj4string([spatial\_object])}\\
 \textbf{Get associated coordinates:} \texttt{coordinates([spatial\_object])}\\
 
+%%%%%%%%%%
+% Projections
+%%%%%%%%%%
+
+\hrulefill \\ 
+\centerline{\textbf{Managing Projections}} \\
+\href{http://www.spatialreference.org/}{\underline{\textbf{Projection code database}}} \\
+\hspace{0.3cm}
+\textbf{Assigning projection by EPSG code:} \texttt{proj4string([spatial object]) <-CRS("+init=EPSG:4326")}
 
 \section*{Raster Data}
+
+
+%%%%%%%%%%
+% Creating from Scratch
+%%%%%%%%%%
+
+\centerline{\textbf{Creating Spatial Objects From Scratch}} 
+
+\textbf{New Grid Topology:} \\
+\texttt{newtopology <- GridTopology(cellcentre.offset=[center of South-West cell], \\
+\hspace*{4cm} cellsize=[x and y size of each cell], \\
+\hspace*{4cm} cells.dim=[number of cells in x and y])} \\
+\emph{Example:} \texttt{newtopology <- GridTopology(cellcentre.offset=c(0,0), cellsize=c(1,1), cells.dim=c(5,5))} 
+
+\textbf{Add Data:} \\
+\texttt{SpGdf <- SpatialGridDataFrame([grid topology object], [DataFrame])}
+\begin{itemize}
+	\item DataFrame must have as many rows as topology has cells. Values in DataFrame are associated with cells in order starting in top left cell, moving across row left to row, then moving down one row and repeating, ending in bottom right cell. 
+\end{itemize}
+
+%%%%%%%%%%
+% Acronyms
+%%%%%%%%%%
+
+\section*{Odds and Ends}
+\underline{\textbf{Open-Source GIS Software Acronyms:} }\\
+
+\noindent GIS tools in R are based on a set of tools developed by the open-source community and which underlie a great many GIS tools beside those available in R, including tools in Python and several stand-alone applications (like QGIS). As a result, there are a number of acronyms you're likely to find if you start googling GIS tools -- here's a quick guide to them. \\
+\begin{itemize}
+	\item \textbf{OSGeo}: Open-Source Geospatial Foundation; the group the manages the ecosystem of open-source GIS software. 
+	\item \textbf{GDAL}: Geospatial Data Abstraction Library. Once upon a time, OSGeo published two sets of tools -- OGR for working with vector data, and GDAL for working with raster data. In recent years, however, these tools have converged, so GDAL \emph{usually} used to refer to the full library created by OSGeo. In R, however, the older meanings often still apply, which is why \texttt{readGDAL()} is for reading raster data and \texttt{readOGR()} is for reading vector data. 
+	\item \textbf{OGR}: OpenGIS Simple Features Reference (I think?). At one time OGR was the set of tools published by OSGeo for manipulating vector data. OGR is now officially a part of GDAL (which is why it comes in the \texttt{rgdal} library). 
+	\item \textbf{proj4}: proj4 is standard format for describing projections.
+	\item \textbf{GRASS}: An OSGeo platform designed to unify the GDAL tools in a graphical user interface. 
+	\item \textbf{QGIS}: An open-source program designed specifically to be an alternative to ArcGIS based on the GDAL library. 
+\end{itemize}
+Want to know more? \href{https://trac.osgeo.org/gdal/wiki/FAQGeneral#WhatdoesOGRstandsfor}{\underline{Check out the OSGeo FAQs!}}
 
 %\end{multicols}
 
