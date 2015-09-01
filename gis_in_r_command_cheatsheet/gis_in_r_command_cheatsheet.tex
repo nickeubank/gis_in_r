@@ -40,7 +40,7 @@
 \maketitle
 % \begin{multicols}{2}
 	
-\hrulefill \\ 
+\section*{Vector Data}
 \centerline{\textbf{Installing}}
 Update R to version $>$ 3.1.
 On Windows:
@@ -71,6 +71,27 @@ On OSX:
 	\item \emph{Spatial Polygons are Polygons with associated projection data}
 \end{itemize}
 \textbf{Spatial Polygons with DF}:\texttt{SpatialPolygonsDataFrame([SpatialPolygons Obj, dataframe])}
+
+\hrulefill \\ 
+\centerline{\textbf{Loading Spatial Objects from Files}} \\
+
+\[ fill in \]
+
+\hrulefill \\ 
+\centerline{\textbf{Interrogating Spatial Objects}} \\
+\textbf{Quick summary:} \texttt{summary([spatial\_object])}\\
+\textbf{Longer summary of contents:} \texttt{str([spatial\_object])}\\
+\textbf{Full list of contents:} \texttt{attributes([spatial\_object])}\\
+\textbf{Check if projected:} \texttt{is.projected([spatial\_object])}\\
+
+\underline{\textbf{EXTRACT ATTRIBUTES:} }\\
+\textbf{Bounding Box:} \texttt{bbox([spatial\_object])}\\
+\textbf{Get full projection info:} \texttt{proj4string([spatial\_object])}\\
+\textbf{Get associated coordinates:} \texttt{coordinates([spatial\_object])}\\
+
+
+\section*{Raster Data}
+
 %\end{multicols}
 
 
