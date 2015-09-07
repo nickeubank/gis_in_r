@@ -31,24 +31,111 @@ opts_knit$set(width=75)
 
 In this section we will look at some libraries and commands that allow us to process spatial data in R and perform some common operations.
 
-Before we start, please make sure you have the `dplyr`, `sp`, `rgdal` installed. For `rgdal` installation inststructions refer to [this earlier notebook](http://rpubs.com/cengel248/56015).
+Before we start, please make sure you have the `dplyr`, `sp`, `rgdal` installed. For `rgdal` installation instructions refer to [this earlier notebook](http://rpubs.com/cengel248/56015).
+
+# 1. Managing Projections
+
+In the previous tutorial, we reviewed how to define a projection for a dataset. **Defining** a projection is when the user tells the computer how it should *interpret* the x-y coordinates associated with a `Spatial*` object. For example, if data comes from a GPS device, one must tell the computer those x-y coordinates are latitudes and longitudes.
+
+Now we will discuss how to reproject Spatial Data. **Reprojecting** is when you tell the computer to *convert* a spatial object -- whose projection has already been defined! -- from its current projection into a new projection. 
+
+Reprojecting is a very common task because you cannot work with different spatial objects unless they have the same geographic coordinate system and projection, so when you want to combine data from different sources, you will almost inevitably need to reproject one of the datasets to match the other.  
+
+Reprojecting data requires two tools, both in the `sp` package:
+
+* a Coordinate Reference System `CRS` object with the new projection definition
+* `spTransform()` function
+
+A CRS is an object that includes all the information needed to project a spatial object, including both a Geographic Coordinate System (the model of the Earth used to create the data) and a projection (a way of converting points on the three-dimensional Earth onto a two-dimensional plane). 
+
+The trickiest part of working with CRS objects is determining the code -- called a "projection string" -- for the projection you need. Fortunately, you can find projection strings [online here](http://www.spatialreference.org).
+
+Once you've found the projection you want, you can create the appropriate CRS object in one of two ways -- either you can copy the proj4 string from the spatialreference.org website, or you can use the EPSG code. 
 
 
-# 1. Attribute Join
+For example, you can create a CRS object for [UTM zone 33N (EPSG:32633)](http://spatialreference.org/ref/epsg/wgs-84-utm-zone-33n/) by either passing the full proj4 code:
 
-An attribute join brings tabular data into a geographic context. It refers to the process of joining data in tabular format to data in a format that holds the geometries (polygon, line, or point). 
+```{r eval=FALSE}
+MyNewProjection <- CRS("+proj=utm +zone=33 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+```
 
-If you have done attribute joins of shapefiles in GIS software like _ArcGIS_ or _QGis_ you know that you need a __unique identifier__ in both the attribute table of the shapefile and the table to be joined. 
+or the EPSG code:
 
-In order to combine a `Spatial*Dataframe` with another table (whic would be a dataframe in R) we do exactly the same. We have a `Spatial*Dataframe`[^1] that contains the geometries and an identifying index variable. We combine it with a dataframe, that includes the same index variable with additional variables.
+```{r eval=FALSE}
+MyNewProjection <- CRS("+init=EPSG:32633")
+```
 
-![Attribute Join of countryData table to worldCountries using unique ID variables](images/attrJoin.png)
+Once you've defined a `CRS` object with the new projection you want to use, all you have to do is execute the `spTransform` function on the object you want to re-project. If, for example, we have an object called MyCity and we want to reproject this into a new projection MyNewProjection, we would say:
+
+```{r eval=FALSE}
+MyNewProjection <- CRS("definition of projection goes here as string")
+spTransform(MyCity, MyNewProjection)
+```
+
+Note that you can also retrieve the CRS from an existing `Spatial*` object with the `proj4string()` command. 
+
+***
+
+### Exercise 1
+
+#. If you haven't already, create a directory `R_Workshop` on your Desktop. 
+
+#. Set `R_Workshop` as your working directory in R Studio (Session > Set Working Directory > Choose Directory..).
+
+  #. Download and unzip [`RSpatialDataOps.zip`](https://www.dropbox.com/s/nrc89agtiiwf0m3/RSpatialDataOps.zip?dl=1) in this directory.
+
+#. Load the `rgdal`, `sp`, and `dplyr` packages.
+
+#. Read the `PhillyHomicides` shapefile into R and name it `ph.hom`.
+
+#. What is the CRS of `philly`?   What is the CRS of `ph.hom`?
+
+#. Reproject `ph.hom` so it matches the projection of `philly` and assign it to a new object called `ph.hom.aea`.
+
+#. You can use the `range()` command from the R base package to compare the coordinates before and after repojection and confirm that you actually have transformed them. `range()` simply returns the _min_ and _max_ value of a vector of numbers that you give it. So you can check with:  
+`range(coordinates(ph.hom))`  
+and  
+`range(coordinates(ph.hom.aea))`  
+
+#. You can also compare them visually with:  
+```
+par(mfrow=c(1,2)) 
+plot(ph.hom, axes=TRUE)
+plot(ph.hom.aea, axes=TRUE)
+```
+
+You should see something like:
+
+<!-- ![different projections of the same points](images/ph_homProj.png) -->
+
+***
+
+In order to reproject a raster, including `SpatialGridDataFrame` objects, you will want to use the `projectRaster()` command from the `raster` package[^2]. 
+
+[^2]: This has to do with the fact that a `SpatialGridDataFrame` is based on regularly spaced points. Since reprojection will typically not result in regularly spaced points as after transformation, as it will coerce it into a `SpatialPointsDataFrame`. It is possible but laborious to convert this back into a raster, as some interpolation needs to happen to turn unevently distributed points back into evenly disctibuted grid of points. If you need to you can convert a `SpatialGridDataFrame` to a `raster` with the `raster()` command.
+
+Here is what it would look like to reproject the [DEM](https://www.dropbox.com/s/7e62gkbajfcabh9/DEM_10m.zip?dl=1) downloaded earlier to WGS84.
+
+```{r eval=FALSE, tidy=FALSE}
+dem.r <- raster("DEM_10m/bushkill_pa.dem")
+dem.WGS84 <- projectRaster(dem.r, crs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+plot(dem.r); plot(dem.WGS84)
+```
+
+<!-- ![DEM reproject](images/dem_reproj.png) -->
+
+
+# 2. Attribute Join
+
+An attribute join combines tabular data into a geographic context by associating each observation in a table with a GIS object (a polygon, line, or point). If you have done attribute joins of shapefiles in GIS software like _ArcGIS_ or _QGis_, or merged two datasets in _Stata_ or _R_, this process is analogous -- in an Attribute Join, a `Spatial*Dataframe` (be that a `SpatialPolygonsDataFrame`, `SpatialPointsDataFrame`, or `SpatialLinesDataFrame`) is merged with a table (an R dataframe) using a common _unique identifier_. 
+
+<!-- ![Attribute Join of countryData table to worldCountries using unique ID variables](images/attrJoin.png) -->
 
 To do this we will use `left_join` from the [`dplyr`](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html) package mentioned earlier. 
 
 Assume we have:
 
-* a `SpatialPolygonObject` named _worldCountries_, and
+* a `SpatialPolygons` object named _worldCountries_, and
 * a dataframe called _countryData_ with the attribute data to join
 
 where:
@@ -74,19 +161,10 @@ worldCountries@data <- data.frame(worldCountries@data, countryData[match(worldCo
 ```
  
 ***
-### Exercise 1
+### Exercise 2
 
-#. If you haven't already, create a directory `R_Workshop` on your Desktop. 
 
-#. Set `R_Workshop` as your working directory in R Studio (Session > Set Working Directory > Choose Directory..).
-
-  #. Download and unzip [`RSpatialDataOps.zip`](https://www.dropbox.com/s/nrc89agtiiwf0m3/RSpatialDataOps.zip?dl=1) in this directory.
-
-#. Load the `rgdal`, `sp`, and `dplyr` packages.
-
-#. Read the `PhillyTotalPopHHinc` shapefile into an object named `philly`.
-
-#. Load the CSV table `PhillyEducAttainment.csv` into a dataframe in R and name it `education`.
+#. Load the CSV table `PhillyEducAttainment.csv` from the data loaded above into a dataframe in R and name it `education`.
 
 #. Check out the column names of `philly` and and of `education` to determine which one might contain the unique identifier for the join. Hint: use the `names()` command. (If you are interested in what those data are, you can take a look at the codebook _PhillyEducAttainment_nhgis2010_tract_codebook.txt_)
 
@@ -102,71 +180,13 @@ spplot (philly, "JN9E032")
 
 [^1]: Per the [ESRI specification](http://www.esri.com/library/whitepapers/pdfs/shapefile.pdf) a shapefile always has an attribute table, so when we read it into R with the `readOGR` command from the `sp` package it automatically becomes a `Spatial*Dataframe` and the attribute table becomes the dataframe.
 
-
-# 2. Reprojecting
-Not unfrequently you may have to reproject spatial objects that you perhaps have acquired from differnet sources and that you need to be in the same Coordinate Reference System (CRS). The `sp` package has a function called `spTransform()` that will do this for you. The function takes as a minimum the following two arguments:
-
-* the `Spatial*` object to reproject
-* a CRS object with the new projection definition
-
-If for, example, we have an object called `MyCity` and we want to reproject this into a new projection `MyNewProjection`, we would say:
-
-```{r eval=FALSE}
-MyNewProjection <- CRS("definition of projection goes here as string")
-spTransform(MyCity, MyNewProjection)
-```
-
-The perhaps trickiest part here is to determine the definition of the projection string, which needs to be a string in [proj4](http://trac.osgeo.org/proj/) format. You can [look it up online](http://www.spatialreference.org). For example for [UTM zone 33N (EPSG:32633)](http://spatialreference.org/ref/epsg/wgs-84-utm-zone-33n/) the string would be:
-
-[`+proj=utm +zone=33 +ellps=WGS84 +datum=WGS84 +units=m +no_defs`](http://spatialreference.org/ref/epsg/wgs-84-utm-zone-33n/proj4js/)
-
-Note that you can also retrieve the CRS from an existing `Spatial*` object with the `proj4string()` command. 
-
-***
-
-### Exercise 2
-
-#. From the files downaloaded earlier read the `PhillyHomicides` shapefile into R and name it `ph.hom`.
-
-#. What is the CRS of `philly`?   What is the CRS of `ph.hom`?
-
-#. Reproject `ph.hom` so it matches the projection of `philly` and assign it to a new object called `ph.hom.aea`.
-
-#. You can use the `range()` command from the R base package to compare the coordinates before and after repojection and confirm that you actually have transformed them. `range()` simply returns the _min_ and _max_ value of a vector of numbers that you give it. So you can check with:  
-`range(coordinates(ph.hom))`  
-and  
-`range(coordinates(ph.hom.aea))`  
-
-#. You can also compare them visually with:  
-```
-par(mfrow=c(1,2)) 
-plot(ph.hom, axes=TRUE)
-plot(ph.hom.aea, axes=TRUE)
-```
-
-You should see something like:
-
-![different projections of the same points](images/ph_homProj.png)
-
-***
-
-In order to reproject a raster, including `SpatialGridDataFrame` objects, you will want to use the `projectRaster()` command from the `raster` package[^2]. 
-
-[^2]: This has to do with the fact that a `SpatialGridDataFrame` is based on regularly spaced points. Since reprojection will typically not result in regularly spaced points as after transformation, as it will coerce it into a `SpatialPointsDataFrame`. It is possible but laborious to convert this back into a raster, as some interpolation needs to happen to turn unevently distributed points back into evenly disctibuted grid of points. If you need to you can convert a `SpatialGridDataFrame` to a `raster` with the `raster()` command.
-
-Here is what it would look like to reproject the [DEM](https://www.dropbox.com/s/7e62gkbajfcabh9/DEM_10m.zip?dl=1) downloaded earlier to WGS84.
-
-```{r eval=FALSE, tidy=FALSE}
-dem.r <- raster("DEM_10m/bushkill_pa.dem")
-dem.WGS84 <- projectRaster(dem.r, crs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-plot(dem.r); plot(dem.WGS84)
-```
-
-![DEM reproject](images/dem_reproj.png)
-
 # 3. Spatial join: Points in Polygons
 
-Spatial joins are frequent topological operations. For the next exercise we want to count all the homicides for each census tract in Philadelphia. To achieve this this we join the points of homicide incidence to the census tract polygon. You might be familiar with this operation from other GIS packages.
+Spatial joins are frequent topological operations. Unlike an attribute join -- which works similarly to a merge or join with non-spatial data -- a spatial join in your first purely spatial operation. In a spatial join, observations from different datasets are joined based not on a variable, but by their relationship in space.
+
+Because a spatial join relates observations based on their relative positions in space, spatial joins are a way of relating two sets of spatial objects, rather than relating one set of spatial objects with data in a table (like an attribute join).
+
+For the next exercise we want to count all the homicides that occur *within* each census tract in Philadelphia. To achieve this this we join the points of homicide incidence to the census tract polygon. You might be familiar with this operation from other GIS packages.
 
 In R will use the `aggregate()` function from the `sp` package[^3]. Here are our parameters:
 
@@ -278,6 +298,8 @@ plot (ph.buf, add=T, lwd = 2)
 
 ````
 
-![Philly Selection](images/phillySelection.png)
+<!--  ![Philly Selection](images/phillySelection.png)  -->
+
+
 
 
