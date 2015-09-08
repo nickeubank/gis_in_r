@@ -68,20 +68,30 @@ On OSX:
 
 \centerline{\textbf{Creating Spatial Objects From Scratch}} 
 \underline{\textbf{Points:}}\\
+
 \textbf{Points}: \texttt{SpatialPoints([matrix of coordinates])}
 \begin{itemize}
 	\item Note: if latitude and longitude coordinates, must be ordered longitude (x-coordinate), latitude (y-coordinate)
 \end{itemize}
 \textbf{Points with DF}: \texttt{SpatialPointsDataFrame([Spatial Points Obj], [DataFrame])}\\
 \\
-\underline{\textbf{Polygons:}}\\
-\textbf{Polygon (basic shapes)}: \texttt{Polygon([matrix of coordinates of vertices])}\\
+\underline{\textbf{Lines:}}\\
+
+\textbf{Line (single geometric line)}: \texttt{Line([matrix of coordinates of vertices])}\\
+\textbf{Lines (single ``observations'' potentially consisting of several basic lines, like a river)}:\\ 
+\hspace*{1cm} \texttt{Lines([list of Line Objs], [names for Line objs])}\\
+\textbf{SpatialLines (collection of ``observations'', like shapefile)}: \\
+\hspace*{1cm} \texttt{SpatialLines([list of Line\textbf{s} Objs], [names for Lines objs])}\\
+\textbf{Spatial Lines with DF}: \texttt{SpatialLinesDataFrame([SpatialLines Obj, DataFrame])}\\
+\\
+\underline{\textbf{Polygons:}} \\
+
+\textbf{Polygon (one geometric shape defined by a single enclosing line)}: \\
+\hspace*{1cm}\texttt{Polygon([matrix of coordinates of vertices])} \\
 \textbf{Polygons (single ``observations'' potentially consisting of several basic shapes)}:\\ 
-\hspace*{1cm} \texttt{Polygons([list of Polygon Objs], [names for Polygons])}\\
-\textbf{Collection of ``observations''}: \texttt{SpatialPolygons([list of Polygon\textbf{s} Objs], [names for Polygons])}
-\begin{itemize}
-	\item \emph{SpatialPolygons are the R analogue of a shapefile}
-\end{itemize}
+\hspace*{1cm} \texttt{Polygons([list of Polygon Objs], [names for Polygon objs])}\\
+\textbf{SpatialPolygons (collection of ``observations'', like shapefile)}:\\
+\hspace*{1cm} \texttt{SpatialPolygons([list of Polygon\textbf{s} Objs], [names for Polygons objs])}\\
 \textbf{Spatial Polygons with DF}: \texttt{SpatialPolygonsDataFrame([SpatialPolygons Obj, DataFrame])}
 
 
@@ -112,15 +122,15 @@ On OSX:
 \hrulefill \\ 
 \centerline{\textbf{Interrogating Spatial Objects}} \\
 \underline{\textbf{Summaries:} }\\
-\textbf{Quick summary:} \texttt{summary([spatial\_object])}\\
-\textbf{Longer summary of contents:} \texttt{str([spatial\_object])}\\
-\textbf{Full list of contents:} \texttt{attributes([spatial\_object])}\\
-\textbf{Check if projected:} \texttt{is.projected([spatial\_object])}\\
+\textbf{Quick summary:} \texttt{summary([Spatial obj])}\\
+\textbf{Longer summary of contents:} \texttt{str([Spatial obj])}\\
+\textbf{Full list of contents:} \texttt{attributes([Spatial obj])}\\
+\textbf{Check if projected:} \texttt{is.projected([Spatial obj])}\\
 
 \underline{\textbf{Extract Attributes:} }\\
-\textbf{Bounding Box:} \texttt{bbox([spatial\_object])}\\
-\textbf{Get full projection info:} \texttt{proj4string([spatial\_object])}\\
-\textbf{Get associated coordinates:} \texttt{coordinates([spatial\_object])}\\
+\textbf{Bounding Box:} \texttt{bbox([Spatial obj])}\\
+\textbf{Get full projection info:} \texttt{proj4string([Spatial obj])}\\
+\textbf{Get associated coordinates:} \texttt{coordinates([Spatial obj])}\\
 
 %%%%%%%%%%
 % Projections
@@ -130,8 +140,11 @@ On OSX:
 \centerline{\textbf{Managing Projections}} \\
 \href{http://www.spatialreference.org/}{\underline{\textbf{Projection code database}}} \\
 \hspace{0.3cm}
-\textbf{Assigning projection by EPSG code:} \texttt{proj4string([spatial object]) <-CRS("+init=EPSG:4326")}
-
+\textbf{Assigning projection by EPSG code:} \texttt{proj4string([Spatial obj]) <-CRS("+init=EPSG:4326")}\\
+\textbf{Get projection from Spatial obj:} \texttt{proj4string([Spatial obj])} \\
+\textbf{Re-project:} \\
+\hspace*{0.3cm}\texttt{newProjection <- CRS("projection string goes here")}\\
+\hspace*{0.3cm}\texttt{spTransform([Spatial object],newProjection)}\\
 \section*{Raster Data}
 
 
