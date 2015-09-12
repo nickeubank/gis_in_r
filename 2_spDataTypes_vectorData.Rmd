@@ -261,26 +261,34 @@ Finally, you can gather a collection of `Polygons` (say, one for each state) int
 Note that the coordinates of the _Sr4_ polygon move in the opposite direction (anti-clockwise) than the other three (clockwise); it is meant to represent a hole in the _Sr3_ polygon. The default value for the hole colour is "transparent". Note that the Polygons objects have to be given character ID values, and that these values must be unique for `Polygons` objects combined in a `SpatialPolygons` object.
 
 ```{r}
-# create polyon objects from coordinates
+# create polyon objects from coordinates. 
+# Each object is a single geometric polygon defined by a bounding line. 
 Sr1 <-  Polygon(cbind(c(2,4,4,1,2),c(2,3,5,4,2)))
 Sr2 <-  Polygon(cbind(c(5,4,2,5),c(2,3,2,2)))
 Sr3 <-  Polygon(cbind(c(4,4,5,10,4),c(5,3,2,5,5)))
 Sr4 <-  Polygon(cbind(c(5,6,6,5,5),c(4,4,3,3,4)), hole = TRUE)
 
 # create lists of polygon objects from polygon objects and unique ID
+# A `Polygons` is like a single observation. 
 Srs1 <-  Polygons(list(Sr1), "s1")
 Srs2 <-  Polygons(list(Sr2), "s2")
 Srs3 <-  Polygons(list(Sr3, Sr4), "s3/4")
 
 # create spatial polygons object from lists
+# A SpatialPolygons is like a shapefile. 
 SpP <-  SpatialPolygons(list(Srs1,Srs2,Srs3), 1:3)
 plot(SpP)
 ```
 
 
+### 2.5 Adding Attributes to SpatialPolygon
 In order to add attributes to the polygons the `row.names` of the attributes data frame are matched with the ID slots of the SpatialPolygons object, and the rows of the data frame will be re-ordered if necessary.
 
-Add attributes:
+Make attributes:
+```{r}
+attr <- data.frame(attr1=1:3, attr2=3:1, row.names=c("s3/4", "s2", "s1"))
+```
+
 ```{r}
 attr <- data.frame(attr1=1:3, attr2=3:1, row.names=c("s3/4", "s2", "s1"))
 SrDf <- SpatialPolygonsDataFrame(SpP, attr)
