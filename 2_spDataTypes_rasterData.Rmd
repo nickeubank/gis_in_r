@@ -1,0 +1,120 @@
+---
+title: "Introduction to Spatial Data Types in R -- Raster Data"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+#library(rmdformats)
+
+## libraries needed for R code examples
+library(raster)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+
+```
+
+***
+
+Make sure you have the `raster` libraries installed. If not: 
+
+    install.packages("raster")
+
+***
+## 1. Creating Raster Data From Scratch
+
+Rasters are much more compact that vectors. Because of their regular structure the coordinates do not need to be recorded for each pixel or cell in the rectangular extent. A raster has a CRS, an origin, a distance or cell size in each direction, a dimension in terms of numbers of cells, and an array of values. If necessary, the coordinates for any cell can be computed. 
+
+Note that the `sp` library used for vector data does have some basic tools for manipulating raster data. However, the `sp` library has largely been replaced by the `raster` library we will use here, and anything one can do with the `sp` library can also be done with the `raster` library.
+
+A raster dataset has three primary components:
+
+* A grid, which consists of:
+    + dimensions (number of rows and columns), 
+    + resolution (size of sides of each cell), 
+    + and extent (where the edges of the grid "are")
+* A set of values associated with each cell in the grid
+* Projection data about how the grid relates to the physical world
+
+It's relatively easy to start a raster object by just defining the grid:
+
+```{r}
+basic_raster <- raster(ncol=5, nrow=10, xmn=0, xmx=5, ymn=0, ymx=10)
+basic_raster
+```
+
+However, note that this raster has a grid, but no data:
+```{r}
+hasValues(basic_raster)
+```
+
+We add data to the raster object using the `values` function:
+
+```{r}
+values(basic_raster) <-  1:50  # Note 50 is the total number of cells in the grid. 
+plot(basic_raster)
+```
+
+**Note even though a grid is a 2-dimensional object, `SpatialGridDataFrame()` looks for data that is one-dimensional,** then assigns the values in the DataFrame by (a) starting in the top left cell, then (b) moving across the row from left to right, and finally (c) moving down a row and repeating the whole process. Thus each column must be the length of the total number of cells. 
+
+
+### Defining projection
+To define a projection, we use the same proj4 strings as vector data, but without the intermediate step of creating a CRS object:
+
+```{R}
+projection(basic_raster) <- "+init=EPSG:4326"
+```
+
+## 2. Reading Raster data from files
+
+The `raster` library can also read many file types on it's own. 
+
+```{R}
+raster_from_file <- raster("DEM_10m/bushkill_pa.dem")
+plot(raster_from_file)
+```
+
+## 3. Modifying & Interrogating `raster` objects
+
+`raster` comes with a number of tools for modifying a raster object: 
+
+* Change resolution: `res(basic_raster) <- c(x value,y value)`
+* Change number of columns: `ncol(basic_raster) <- value`
+* Change number of rows: `nrow(basic_raster) <- value`
+
+However, **be careful with these commands** -- if you change the number of columns or rows, that will necessarily change the resolution and vice versa! Moreover, **if you change the dimensions, any values associated with the data will be erased.** 
+
+Simiarly, you can call most attributes of a raster using analogous commands:
+
+* Resolution: `res(basic_raster)`
+* Dimensions: `dim(basic_raster)`
+* Max X extent: `xmax(basic_raster)`
+* Values: `values(basic_raster)`
+* etc. 
+
+***
+#### Exercise 1
+
+1. Make sure your working directory is set to the `R_Workshop` folder and it contains the materials you downloaded and unzipped earlier.
+2. Read in with: `raster_from_file <- raster("DEM_10m/bushkill_pa.dem")`
+3. What is the extent of this raster?
+4. What is the projection?
+5. Plot the raster with: `plot(raster_from_file)`
+***
+

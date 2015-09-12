@@ -1,5 +1,5 @@
 ---
-title: "Introduction to Spatial Data Types in R"
+title: "Introduction to Spatial Data Types in R -- Vector Data"
 output:
   html_document:
     toc: true
@@ -16,7 +16,6 @@ library(knitr)
 
 ## libraries needed for R code examples
 library(sp)
-library(raster)
 
 ## Global options
 options(max.print="75")
@@ -28,13 +27,14 @@ opts_chunk$set(echo=TRUE,
                message=FALSE,
                warning=FALSE)
 opts_knit$set(width=75)
+
 ```
 
 ***
 
-Make sure you have the `sp` and `raster` libraries installed. If not: 
+Make sure you have the `sp` library installed. If not: 
 
-    install.packages(c("sp", "raster"))
+    install.packages("sp")
 
 
 In addition, please install the `rgdal` library.
@@ -65,7 +65,6 @@ Test if all went well:
     library (rgdal)
 
 ***
-
 ## 1. Spatial objects in R
 
 ### Conceptualizing a spatial Object
@@ -225,6 +224,8 @@ crs.geo <- CRS("+init=EPSG:4326")  # geographical, datum WGS84
 proj4string(ph.df) <- crs.geo  # define projection system of our data
 ```
 
+We'll talk more about managing projections in the next lesson. 
+
 ***
 
 
@@ -329,72 +330,6 @@ readOGR("PH", "Philadelphia")
 
 ***
 
-GDAL supports over 200 [raster formats](http://www.gdal.org/formats_list.html) and [vector formats](http://www.gdal.org/ogr_formats.html). Use  
-`ogrDrivers()` and `gdalDrivers()`   
-(without arguments) to find out which formats your rgdal install can handle.
-
-
-### Raster data
-
-Rasters are much more compact that vectors. Because of their regular structure the coordinates do not need to be recorded for each pixel or cell in the rectangular extent. A raster has a CRS, an origin, a distance or cell size in each direction, a dimension in terms of numbers of cells, and an array of values. If necessary, the coordinates for any cell can be computed. 
-
-In `sp` the `GridTopology` class is the key element of raster representations[^5]. It contains 
-
-* the center coordinate pair of the south-west raster cell, 
-* the two cell sizes in the metric of the coordinates, giving the step to successive centres, and 
-* the numbers of cells in each dimension. 
-
-[^5]: There is also a `SpatialPixels` object which stores grid topology and coordinates of the actual points.
-
-A simple grid can be built like this:
-
-```{r}
-gtopo <- GridTopology(cellcentre.offset=c(0,0), cellsize=c(1,1), cells.dim=c(5,5)) # specify the grid topology
-datafr <- data.frame(1:25) # make up some data
-SpGdf <- SpatialGridDataFrame(gtopo, datafr) # create the grid
-summary(SpGdf)
-spplot(SpGdf, sp.layout = c('sp.points', SpatialPoints(coordinates(SpGdf))))
-```
-
-> Note even though a grid is a 2-dimensional object, `SpatialGridDataFrame()` looks for data that is one-dimensional, then assigns the values in the DataFrame by (a) starting in the top left cell, then (b) moving across the row from left to right, and finally (c) moving down a row and repeating the whole process. Thus each column must be the length of the total number of cells. 
-
-If `SpatialGridDataFrame()` is given a DataFrame with more than one column where each column has as many rows as the grid has cells, it will treat each column as a different dataset. This means a single raster could have multiple forms of data associated with each cell, like average rainfall and average temperature. 
-
-In a similar fashion to the example above we can use `readGDAL` from the `rgdal` package to read in a raster file. It will require one parameter as a minimum, which is the filename of the raster. So let's do this.
-
-***
-
-#### Exercise 5
-
-1. Make sure your working directory is set to the `R_Workshop` folder and it contains the materials you downloaded and unzipped earlier.
-2. Read in with: `dem <- readGDAL("DEM_10m/bushkill_pa.dem")`
-3. Examine with `summary()` 
-4. Load the `raster` library (for the contour plot)
-5. Extract contour lines and plot them: `contour(dem)`
-
-***
-
-Alternatively you can use the `raster` package with:
-
-```
-dem.r <- raster("DEM_10m/bushkill_pa.dem")
-```
-
-Note that here you have created an object of type `RasterLayer`, as compared to above, where you created an object of type `SpatialGridDataFrame`.
-
-
-[^6]: From (https://www.e-education.psu.edu/geog482fall2/c7_p8.html)
-
-The `raster` package is a major extension of spatial data classes to access large rasters and in particular to process very large files. It includes object classes for `RasterLayer`, `RasterStacks`, and `RasterBricks`, functions for converting among these classes, and operators for computations on the raster data. Conversion from `sp` type objects into `raster` type objects is easy.
-
-RasterLayer objects can also be created from a simple matrix, as we did in the example from the _Introduction_.
-
-```{r}
-class(volcano)
-volcano.r <- raster(volcano)
-class(volcano.r)
-```
-
-This package becomes interesting when you need to work for example with Landsat images that have multiple bands and want to perform map algebra.
+## 4. Further resources
 
 As of 2015-03-10 there are 134 [R packages on CRAN for reading, visualising, and analysing (geographical) spatial data](http://cran.r-project.org/web/views/Spatial.html). I recommend to visit that website if you are exploring spatial analysis with R.
