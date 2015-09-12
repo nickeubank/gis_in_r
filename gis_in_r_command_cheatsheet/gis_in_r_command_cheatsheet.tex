@@ -38,8 +38,8 @@
 \centerline{\textbf{Installation of Relevant Packages}}
 \textbf{Packages:}
 \begin{itemize}
-	\item \texttt{sp}: tools for spatial data of all types
-	\item \texttt{raster}: extra tools for very large raster datasets
+	\item \texttt{sp}: tools for vector spatial data
+	\item \texttt{raster}: tools for raster datasets
 	\item \texttt{rgdal}: tools for reading and writing files in different formats
 \end{itemize}
 \textbf{Installation:}\\
@@ -145,6 +145,8 @@ On OSX:
 \textbf{Re-project:} \\
 \hspace*{0.3cm}\texttt{newProjection <- CRS("projection string goes here")}\\
 \hspace*{0.3cm}\texttt{spTransform([Spatial object],newProjection)}\\
+
+
 \section*{Raster Data}
 
 
@@ -152,39 +154,59 @@ On OSX:
 % Creating from Scratch
 %%%%%%%%%%
 
-\centerline{\textbf{Creating Spatial Objects From Scratch}} 
+\centerline{\textbf{Creating Rasters From Scratch}} 
 
-\textbf{New Grid Topology:} \\
-\texttt{newtopology <- GridTopology(cellcentre.offset=[center of South-West cell], \\
-\hspace*{4cm} cellsize=[x and y size of each cell], \\
-\hspace*{4cm} cells.dim=[number of cells in x and y])} \\
-\emph{Example:} \texttt{newtopology <- GridTopology(cellcentre.offset=c(0,0), cellsize=c(1,1), cells.dim=c(5,5))} 
-
-\textbf{Add Data:} \\
-\texttt{SpGdf <- SpatialGridDataFrame([grid topology object], [DataFrame])}
+\underline{\textbf{Grid Topology (the skeleton):}}\\
+\hspace*{0.3cm}\texttt{gtopo <- GridTopology(cellcentre.offset = c(0, 0), cellsize = c(1, 1), cells.dim = c(5, 5))}\\
+\underline{\textbf{SpatialGridDataFrame (skeleton + data):}}\\
+\hspace*{0.3cm}\texttt{SpGdf <- SpatialGridDataFrame([GridTopology obj], [DataFrame])}
 \begin{itemize}
-	\item DataFrame must have as many rows as topology has cells. Values in DataFrame are associated with cells in order starting in top left cell, moving across row left to row, then moving down one row and repeating, ending in bottom right cell. 
+	\item Each DataFrame \emph{column} becomes different variable. 
+	\item Length of columns should match total number of cells in GridTopology obj
+	\item DataFrame entries associated with cells in order, with top left cell as \emph{1}, increasing left to right, then top to bottom, ending with bottom right cell. 
 \end{itemize}
 
+
 %%%%%%%%%%
-% Acronyms
+% Load from Files 
 %%%%%%%%%%
 
-\section*{Odds and Ends}
-\underline{\textbf{Open-Source GIS Software Acronyms:} }\\
-
-\noindent GIS tools in R are based on a set of tools developed by the open-source community and which underlie a great many GIS tools beside those available in R, including tools in Python and several stand-alone applications (like QGIS). As a result, there are a number of acronyms you're likely to find if you start googling GIS tools -- here's a quick guide to them. \\
+\hrulefill \\ 
+\centerline{\textbf{Loading Spatial Objects from Files}} \\
+\texttt{dem <- readGDAL("file name.fileextension")}
 \begin{itemize}
-	\item \textbf{OSGeo}: Open-Source Geospatial Foundation; the group the manages the ecosystem of open-source GIS software. 
-	\item \textbf{GDAL}: Geospatial Data Abstraction Library. Once upon a time, OSGeo published two sets of tools -- OGR for working with vector data, and GDAL for working with raster data. In recent years, however, these tools have converged, so GDAL \emph{usually} used to refer to the full library created by OSGeo. In R, however, the older meanings often still apply, which is why \texttt{readGDAL()} is for reading raster data and \texttt{readOGR()} is for reading vector data. 
-	\item \textbf{OGR}: OpenGIS Simple Features Reference (I think?). At one time OGR was the set of tools published by OSGeo for manipulating vector data. OGR is now officially a part of GDAL (which is why it comes in the \texttt{rgdal} library). 
-	\item \textbf{proj4}: proj4 is standard format for describing projections.
-	\item \textbf{GRASS}: An OSGeo platform designed to unify the GDAL tools in a graphical user interface. 
-	\item \textbf{QGIS}: An open-source program designed specifically to be an alternative to ArcGIS based on the GDAL library. 
+	\item Pass the entire filename  -- path, filename, and extension -- unlike in \texttt{readOGR()}.
 \end{itemize}
-Want to know more? \href{https://trac.osgeo.org/gdal/wiki/FAQGeneral#WhatdoesOGRstandsfor}{\underline{Check out the OSGeo FAQs!}}
+%%%%%%%%%%
+% Interrogating
+%%%%%%%%%%
 
-%\end{multicols}
+\hrulefill \\ 
+\centerline{\textbf{Interrogating Spatial Objects}} \\
+\underline{\textbf{Summaries:} }\\
+\textbf{Quick summary:} \texttt{summary([SpatialGrid obj])}\\
+\textbf{Longer summary of contents:} \texttt{str([SpatialGrid obj])}\\
+\textbf{Full list of contents:} \texttt{attributes([Spatial obj])}\\
+\textbf{Check if projected:} \texttt{is.projected([Spatial obj])}\\
+
+\underline{\textbf{Extract Attributes:} }\\
+\textbf{Bounding Box:} \texttt{bbox([Spatial obj])}\\
+\textbf{Get full projection info:} \texttt{proj4string([Spatial obj])}\\
+\textbf{Get associated coordinates:} \texttt{coordinates([Spatial obj])}\\
+
+%%%%%%%%%%
+% Projections
+%%%%%%%%%%
+
+\hrulefill \\ 
+\centerline{\textbf{Managing Projections}} \\
+\href{http://www.spatialreference.org/}{\underline{\textbf{Projection code database}}} \\
+\hspace{0.3cm}
+\textbf{Assigning projection by EPSG code:} \texttt{proj4string([Spatial obj]) <-CRS("+init=EPSG:4326")}\\
+\textbf{Get projection from Spatial obj:} \texttt{proj4string([Spatial obj])} \\
+\textbf{Re-project:} \\
+\hspace*{0.3cm}\texttt{newProjection <- CRS("projection string goes here")}\\
+\hspace*{0.3cm}\texttt{spTransform([Spatial object],newProjection)}\\
 
 
 
