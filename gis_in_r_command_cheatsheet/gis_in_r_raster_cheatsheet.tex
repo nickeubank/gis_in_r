@@ -1,0 +1,104 @@
+\documentclass[10pt]{article} 
+\usepackage{amsfonts, amsmath, amssymb} 
+\usepackage{dcolumn, multirow} 
+\usepackage{setspace} 
+\usepackage{epsfig, subfigure, subfloat, graphicx}
+\usepackage{anysize, indentfirst, setspace} 
+\usepackage{verbatim, rotating, paralist}
+\usepackage{latexsym} 
+\usepackage{amsthm} 
+\usepackage{fullpage} 
+\usepackage{graphicx} 
+\usepackage{amsfonts} 
+\usepackage{dsfont} 
+\usepackage{comment} 
+\usepackage{hyperref}
+\usepackage{multicol}
+\usepackage{txfonts} 
+\usepackage{parskip} 
+
+\setlength{\columnsep}{1cm}
+\usepackage{enumitem}
+\setlist{nosep}
+
+\usepackage[margin=2.5cm]{geometry}
+
+\title{GIS in R Command Cheat Sheet \\ \emph{Raster Data}}
+\date{\today}
+\author{Nick Eubank}
+
+\begin{document} 
+\maketitle
+% \begin{multicols}{2}
+
+%%%%%%%%%%
+% Installing
+%%%%%%%%%%
+	
+\centerline{\textbf{Installation of Relevant Packages}}
+\textbf{Packages:}
+\begin{itemize}
+	\item \texttt{raster}: tools for raster datasets
+\end{itemize}
+
+\section*{Building and Managing Raster Objects}
+
+%%%%%%%%%%
+% Creating from Scratch
+%%%%%%%%%%
+
+\centerline{\textbf{Creating Rasters From Scratch}} 
+
+\underline{\textbf{RasterLayer (the skeleton):}}\\
+\hspace*{0.3cm}\texttt{newRL <- raster(ncol=10, nrow=20, xmn=0, xmx=10,ymn=-10,ymx=10)}\\
+\underline{\textbf{RasterLayer w/ Data (skeleton + data):}}\\
+\hspace*{0.3cm}\texttt{values(newRL) <- [vector]}
+\begin{itemize}
+	\item Length of vector should match total number of cells in Raster Layer obj
+	\item vector entries associated with raster cells in order, with top left cell as \emph{1}, increasing left to right, then top to bottom, ending with bottom right cell. 
+\end{itemize}
+
+
+%%%%%%%%%%
+% Load from Files 
+%%%%%%%%%%
+
+\hrulefill \\ 
+\centerline{\textbf{Loading Spatial Objects from Files}} \\
+\texttt{dem <- raster("file name.fileextension")}
+\begin{itemize}
+	\item Pass the entire filename  -- path, filename, and extension -- unlike in \texttt{readOGR()}.
+\end{itemize}
+
+%%%%%%%%%%
+% Interrogating
+%%%%%%%%%%
+
+\hrulefill \\ 
+\centerline{\textbf{Interrogating Raster and Setting Values}} \\
+\textbf{Quick summary:} just type name of raster object \\
+\textbf{Check if has values:} \texttt{hasValues(Raster obj)}\\
+
+\textbf{Viewing or Setting Values:} In general, \texttt{raster} commands will return a value if just typed, and will set a value if an assignment is made. So \texttt{nrow(Raster obj)} gets number of rows, \texttt{nrow(Raster obj)<-5} sets number of rows to 5. Among these:
+\begin{itemize}
+	\item \textbf{Number of rows, columns, resolution:} \texttt{nrow(Raster obj)},\texttt{ncol(Raster obj)},\texttt{res(Raster obj)}
+	\item \textbf{Values:} \texttt{values(Raster obj)}\\
+\end{itemize}
+
+%%%%%%%%%%
+% Projections
+%%%%%%%%%%
+
+\hrulefill \\ 
+\centerline{\textbf{Managing Projections}} \\
+\emph{Note: similar to vector data, but without the intermediate CRS() step -- just pass the proj4 string.}\\
+\href{http://www.spatialreference.org/}{\underline{\textbf{Projection code database}}} \\
+\textbf{Assigning projection by EPSG code:} \texttt{projection([Raster obj]) <-"+init=EPSG:4326"}\\
+\textbf{Get projection from Spatial obj:} \texttt{projection([Raster obj])} \\
+\textbf{Re-project:} \\
+\hspace*{0.3cm}\texttt{reprojectedRaster <- projectRaster([raster obj],crs=[proj4 string for new projection])}\\
+
+
+
+
+\end{document}
