@@ -32,6 +32,7 @@ opts_knit$set(width=75)
 
 ***
 
+## 0. Set-Up
 Make sure you have the `sp` library installed. If not: 
 
     install.packages("sp")
@@ -62,12 +63,12 @@ __On Mac:__
 
 Test if all went well:
 
+    library (sp)
     library (rgdal)
 
 ***
-## 1. Spatial objects in R
+## 1. Conceptualizing Spatial Objects in R
 
-### Conceptualizing a spatial Object
 
 ***
 #### Exercise 1
@@ -82,6 +83,7 @@ Discuss with your neighbor: What do we need to specify in order to define spatia
 
 ***
 
+### How R thinks about vector data
 In R the `sp` package provides classes and methods for spatial data types[^1].
 
 Development of the `sp` began in the early 2000s in an attempt to standardize how spatial data would be treated in R and to allow for better interoparbility between different analysis packages that use spatial data. The package provides classes and methods to create _points_, _lines_, _polygons_, and _grids_ and to operate on them. It is one of the most important packages that you will need to use if dealing with spatial data in R. Many of the spatial analysis packages now use the spatial data types that are implemented in `sp` i.e. they "depend" on the `sp` package.
@@ -96,11 +98,11 @@ The foundation object is the `Spatial` class. It has two slots (new-style class 
 * a __CRS class object__ to define the Coordinate Reference System 
 
 
-## 2. Creating a spatial object
+## 2. Creating Spatial Objects -- The Big Picture
 
 In order to create a spatial object manually with `sp` the basic steps are:  
 
-> I. Create a bunch of points, lines, or polygons (details below)
+>   I. Create a bunch of points, lines, or polygons (details below)
 
 > II. Convert those to a `Spatial*` object (`*` stands for Points, Lines, or Polygons). This steps adds the bounding box (automatically) and the slot for the Coordinate Reference System or CRS (which needs to be filled manually).
 
@@ -109,22 +111,30 @@ In order to create a spatial object manually with `sp` the basic steps are:
 
 ### I. Create geometric objects (topology)
 
-__Points__ (which may have 2 or 3 dimensions) as the most basic spatial data object. They are generated out of either a single coordinate or a set of coordinates[^3], like a two-column matrix or a dataframe with a column for latitude and one for longitude. 
+R has three types of geometric objects: 
 
-__Lines__ are generated out of `Line` objects. A `Line` object is a spaghetti collection of 2D coordinates and is generated out of a two-column matrix or a dataframe with a column for latitude and one for longitude. A `Lines` object is a __list__ of `Line` objects, for example all the contours at a single elevation.
-
-__Polygons__ are generated out `Polygon` objects. A `Polygon` object is a spaghetti collection of 2D coordinates with equal first and last coordinates and is generated out of a two-column matrix or a dataframe with a column for latitude and one for longitude. A `Polygons` object is a __list__ of `Polygon` objects, for example islands belonging to the same country.
+* __Points__ 
+* __Lines__ 
+* __Polygons__ 
 
 ### II. Create spatial objects
-`SpatialPoints` are directly made out of the coordinates. `SpatialLines` and `SpatialPolygons` objects are made using lists of `Lines` or `Polygons` objects respectively.
+
+Geometric objects live in an abstract space (the x-y plane). To make them *spatial* objects, we also need to include information on how those x-y coordinates relate the places in the real world. When we do this, we create:
+
+* __SpatialPoints__
+* __SpatialLines__
+* __SpatialPolygons__
+
 
 ### III. Add attributes
-The points in a `SpatialPoints` object may be associated with a row of attributes to create a `SpatialPointsDataFrame` object. The coordinates and attributes may, but do not have to be keyed to each other using ID values.
 
-`SpatialLinesDataFrame` and `SpatialPolygonsDataFrame` objects are defined using `SpatialLines` and `SpatialPolygons` objects and standard data frames, and the ID fields are here required to match the data frame row names.
+Sometimes we know things about our spatial objects, like the name of a river, or the population of a census region. When we add this information to our spatial data, we get:
+
+* __SpatialPointsDataFrame__
+* __SpatialLinesDataFrame__
+* __SpatialPolygonsDataFrame__
 
 
-![Simplified diagram of how spatial objects are created in `sp`](images/createSpatialObj.png)
 
 
 [^1]: From R Bivand (2011) [Introduction to representing spatial objects in R](http://geostat-course.org/system/files/monday_slides.pdf)
@@ -132,57 +142,71 @@ The points in a `SpatialPoints` object may be associated with a row of attribute
 [^3]: Coordinates should be of type double and will be promoted if not.
 
 
-### Spatial methods
+## 2. Creating a spatial objects from scratch
 
-A number of spatial methods are available for the classes in `sp`. The ones I most often use are:
+### 2.1 Creating Points from Scratch
 
-method/class | and what it does
------------- | ----------------
-`bbox(x)` | returns the bounding box coordinates
-`proj4string(x)` | sets or retrieves projection attributes using the CRS object.
-`CRS()` | creates an object of class of coordinate reference system arguments
-`spplot(x)` | plots all the attributes unless specified otherwise
-`coordinates(x)` | returns a matrix with the spatial coordinates. For spatial polygons it returns the centroids.
-`overlay(x, y)` | combines two spatial layers of different type, e.g. retrieve the polygon or grid indexes on a set of points - we'll come back to that one later
-`spsample(x)` | sampling of spatial points within the spatial extent of objects
+Points are the most basic geometric shape, so we begin by building up a `SpatialPointsDataFrame`. 
 
-### Creating a spatial object from scratch
 
-***
-#### Exercise 2
-
-In this example we will manually generate a point vector object and plot it.
-
+We start with a random set of coordinates, then pass them to the `SpatialPoints` function to create our first `SpatialPoints` object:
 ```{r}
-xy <- matrix(runif(20), ncol=2) # a matrix with some arbitrary points as coordinates..
-xy.sp <- SpatialPoints(xy) # ..converted into a spatial object
+random.coordinates <- matrix(runif(20), ncol=2) # a matrix with some arbitrary points as coordinates..
+xy.sp <- SpatialPoints(random.coordinates) # ..converted into a spatial object
 plot(xy.sp, pch = 2)
 ```
 
-Test out some commands:
+To get a summary of how R sees these points, we can ask it for summary information in a couple different ways. Here's a summary of available commands:
+
+
+method/class | and what it does
+------------ | ----------------
+`coordinates(x)` | returns a matrix with the spatial coordinates. For spatial polygons it returns the centroids.
+`bbox(x)` | returns the bounding box (most extreme x and y coordinates)
+`summary(x)` | an overview of the object, designed for human consumption
+`str(x)` | an overview of the object as R sees it
+`proj4string(x)` | sets or retrieves projection attributes using the CRS object.
+`plot(x)` | plots a spatial object
+`spplot(x)` | plots all the attributes unless specified otherwise
+
+
+Let's try a few:
+
 ```{r}
 coordinates(xy.sp)
 bbox(xy.sp)
-str(xy.sp)
 summary(xy.sp)
 ```
 
-Add attributes:
+As noted above, while `summary` gives you a human-readable sense of an object, `str` gives you a sense of how R sees an object, so let's take a look. If this seems to alien to you, it's not important now, just something to be aware of:
+
+```{r}
+str(xy.sp)
+```
+
+
+#### Adding Attributes
+
+Moving from a `SpatialPoints` to a `SpatialPointsDataFrame` occurs when you add a DataFrame of attributes to the points. Let's just add an arbitrary table to the data -- this will label each point with a letter and a number.   
+
 ```{r}
 df <- data.frame(attr1 = LETTERS[1:10], attr2 = c(10:1))
+```
+
+```{r}
 xy.spdf <- SpatialPointsDataFrame(xy.sp, df)
 summary(xy.spdf)
 ```
 
-Some subsetting:
+Now that we have attributes, we can also subset our data the same way we would subset a DataFrame. Some subsetting:
 ```{r}
 xy.spdf[1:2, ]        # row 1 and 2 only
-xy.spdf[["attr2"]]    # column with "attr2" only
+plot(xy.spdf[which(xy.spdf$attr2>5),])    # select if attr2 > 5
 ```
 
 ***
 
-### Creating a spatial object from a lat/lon table
+### 2.2 Creating a SpatialPoint Object from a lat/lon table
 
 A `SpatialPointsDataFrame` object can be created directly from `data.frames` by specifying which columns contain the coordinates. This is interesting, for example if you have a spreadsheet that contains latitude, longitude and some values. You an read this into a data frame with `read.table`, and then create the object from the data frame in one step by using the `coordinates()` command. That automatically turns the dataframe object into a `SpatialPointsDataFrame`:
 
@@ -193,23 +217,21 @@ A `SpatialPointsDataFrame` object can be created directly from `data.frames` by 
 1. If you haven't already, create a new directory `R_Workshop` on your Desktop. 
 2. Download and unzip [`RSpatialDataTypes.zip`](https://www.dropbox.com/s/g5p8b1xi2k5lydw/RSpatialDataTypes.zip?dl=1) in this directory.
 3. Set your working directory to  `R_Workshop`
-4. Use `read.csv()` to read `PhiladelphiaZIPHousing.csv` into a dataframe in R and name it `ph.df`.
+4. Use `read.csv()` to read `sf_restaurant_inspections.csv` into a dataframe in R and name it `sf.df`.
 5. Use `head()` to examine the first few lines of the dataframe.
 6. Use `class()` to examine which object class the table belongs to.
 7. Convert the table into a spatial object using the `coordinates` command and passing the names of the columns in the table that correspond to longitude and latitude:
 
-    `coordinates(ph.df) <- c("lon", "lat")`
+    `coordinates(sf.df) <- c("longitude", "latitude")`
 
-> Note the reverse order! While we usually say "latitude and longitude", since longitude corresponds to the x-coordinates on a map and latitude corresponds to the y-coodinates and R likes coordinates to be ordered (x,y), we pass `c("lon","lat")`!
+> Note the reverse order! While we usually say "latitude and longitude", since longitude corresponds to the x-coordinates on a map and latitude corresponds to the y-coodinates and R likes coordinates to be ordered (x,y), we pass `c("longitude","latitude")`!
 
 8. Use `class()`again to examine which object class the table belongs to now:  
 What to you observe?
 
-9. Plot, using the attributes from the table:  
-    `bubble(ph.df, "price")` or  
-    `spplot(ph.df, "use")`
-    
-### A brief, but important word about projection.
+9. Plot restaurants with terrible scores by subsetting on `Score`. 
+
+### 2.3 A brief, but important word about projection.
 
 Note that the Spatial object you just created __does not__ have a projection defined. It is ok to plot, but be aware that for any meaningful spatial operation you will need to define a projection. 
 
@@ -228,6 +250,7 @@ We'll talk more about managing projections in the next lesson.
 
 ***
 
+### 2.4 Creating Spatial Polygons
 
 The following example[^4] shows how a set of polygons are built from scratch. Polygons are built up from constituent parts, from `Polygon` objects to `Polygons` objects to `SpatialPolygons`. 
 
@@ -287,15 +310,13 @@ SrDf@data
 
 The good news is that typically we do not have to create `Spatial` family objects as tediously as we did above. It is much more common that we work with already existing spatial data. 
 
-### How to work with `rgdal`
+### 3.1 How to work with `rgdal`
 
 In order to read those into R and turn them into `Spatial*` family objects we rely on the `rgdal` package. It provides us direct access to the powerful [GDAL library](http://gdal.org) from within R. 
 
 We can read in and write out spatial data using:
 
 `readOGR()` and `writeOGR()` (for vector)  
-
-`readGDAL()` and `writeGDAL()` (for raster/grids)
 
 The parameters provided for each function varies depending on the exact spatial file type you are reading. We will take a the ESRI shapefile as an example. A shapefile - as you know - consists of various files, and R expects all those files to be in one directory. 
 
@@ -307,13 +328,12 @@ When reading in a shapefile, `readOGR()` expects at least the following two argu
                            # Note that this is not a path but just the name of the file
 
 For example, if I have a shapefile called `Philadelphia.shp` and all its associated files (like _.dbf, .prj, .shx_) in a directory called `PH` on my desktop, and I have my working directory set to my desktop folder, my command to read this shapefile would look like this:
-
 ```
-readOGR(dsn = "PH", layer = "Philadelphia")
+readOGR(dsn = "sf", layer = "sf_incomes")
 ```
 or in short:
 ```
-readOGR("PH", "Philadelphia")
+readOGR("sf", "sf_incomes")
 ```
 
 ***
@@ -321,12 +341,12 @@ readOGR("PH", "Philadelphia")
 
 1. Load the `rgdal` package.
 2. Make sure your working directory is set to the `R_Workshop` folder and it contains the materials you downloaded and unzipped earlier.
-3. Read `PhillyTotalPopHHinc.shp` into an object called `philly`. Make sure you understand the directory structure.
-4. Examine the file, for example with `summary()`, `class()`, `str("philly", max.level = 2)`, 
-5. Take a look at the column names of the attribute data with `names(philly)`
-6. Take a look at the attribute data with `head(philly@data)`
-7. Note that subsetting works here: `philly[philly$totalPop > 5000,]` 
-8. Plot some attribute data: `spplot(philly, "medHHinc")`
+3. Read `sf_income` into an object called `sf`. Make sure you understand the directory structure.
+4. Examine the file, for example with `summary()`, `class()`, `str("sf", max.level = 2)`, 
+5. Take a look at the column names of the attribute data with `names(sf)`
+6. Take a look at the attribute data with `head(sf@data)`
+7. Note that subsetting works here: `sf[sf$MdIncHH > 40000,]` 
+8. Plot some attribute data: `spplot(sf, "MdIncHH")`
 
 ***
 

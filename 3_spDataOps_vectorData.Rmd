@@ -1,5 +1,5 @@
 ---
-title: "Operations with Spatial Data in R"
+title: "Operations with Spatial Data in R -- Vector Data"
 output:
   html_document:
     toc: true
@@ -41,7 +41,9 @@ Now we will discuss how to reproject Spatial Data. **Reprojecting** is when you 
 
 Reprojecting is a very common task because you cannot work with different spatial objects unless they have the same geographic coordinate system and projection, so when you want to combine data from different sources, you will almost inevitably need to reproject one of the datasets to match the other.  
 
-Reprojecting data requires two tools, both in the `sp` package:
+## Re-projecting Vector Data
+
+Reprojecting vector data requires two tools, both in the `sp` package:
 
 * a Coordinate Reference System `CRS` object with the new projection definition
 * `spTransform()` function
@@ -106,30 +108,15 @@ plot(ph.hom.aea, axes=TRUE)
 
 You should see something like:
 
-<!-- ![different projections of the same points](images/ph_homProj.png) -->
+![different projections of the same points](images/ph_homProj.png)
 
 ***
-
-In order to reproject a raster, including `SpatialGridDataFrame` objects, you will want to use the `projectRaster()` command from the `raster` package[^2]. 
-
-[^2]: This has to do with the fact that a `SpatialGridDataFrame` is based on regularly spaced points. Since reprojection will typically not result in regularly spaced points as after transformation, as it will coerce it into a `SpatialPointsDataFrame`. It is possible but laborious to convert this back into a raster, as some interpolation needs to happen to turn unevently distributed points back into evenly disctibuted grid of points. If you need to you can convert a `SpatialGridDataFrame` to a `raster` with the `raster()` command.
-
-Here is what it would look like to reproject the [DEM](https://www.dropbox.com/s/7e62gkbajfcabh9/DEM_10m.zip?dl=1) downloaded earlier to WGS84.
-
-```{r eval=FALSE, tidy=FALSE}
-dem.r <- raster("DEM_10m/bushkill_pa.dem")
-dem.WGS84 <- projectRaster(dem.r, crs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-plot(dem.r); plot(dem.WGS84)
-```
-
-<!-- ![DEM reproject](images/dem_reproj.png) -->
-
 
 # 2. Attribute Join
 
 An attribute join combines tabular data into a geographic context by associating each observation in a table with a GIS object (a polygon, line, or point). If you have done attribute joins of shapefiles in GIS software like _ArcGIS_ or _QGis_, or merged two datasets in _Stata_ or _R_, this process is analogous -- in an Attribute Join, a `Spatial*Dataframe` (be that a `SpatialPolygonsDataFrame`, `SpatialPointsDataFrame`, or `SpatialLinesDataFrame`) is merged with a table (an R dataframe) using a common _unique identifier_. 
 
-<!-- ![Attribute Join of countryData table to worldCountries using unique ID variables](images/attrJoin.png) -->
+![Attribute Join of countryData table to worldCountries using unique ID variables](images/attrJoin.png)
 
 To do this we will use `left_join` from the [`dplyr`](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html) package mentioned earlier. 
 
@@ -298,7 +285,7 @@ plot (ph.buf, add=T, lwd = 2)
 
 ````
 
-<!--  ![Philly Selection](images/phillySelection.png)  -->
+![Philly Selection](images/phillySelection.png)
 
 
 
