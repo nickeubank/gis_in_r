@@ -1,0 +1,11 @@
+Download GIS and data from NHGIS
+Census tracts
+Median household Income ACS 5 year
+Total Population 2010 Census
+
+Before join extracted state with:
+ogr2ogr -f "ESRI Shapefile" -where "STATEFP10 = '42'" PA.shp US_tract_2010.shp
+
+Joined in Qgis
+copied fields from string to numeric and renamed
+simplified geometry from over 30k nodes to about 2.8k nodes

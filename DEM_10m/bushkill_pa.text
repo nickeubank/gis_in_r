@@ -1,0 +1,365 @@
+Identification_Information:
+  Citation:
+    Citation_Information:
+      Originator: U.S. Geological Survey
+      Publication_Date: 20010920
+      Title: 7.5 minute Digital Elevation Model (DEM) for Bushkill Quadrangle 10-meter resolution
+      Publication_Information:
+        Publication_Place: Reston, Virginia
+        Publisher: U.S. Geological Survey
+      Online_Linkage: ftp://www.pasda.psu.edu/pub/pasda/dem24k_10m/bushkill_pa.zip
+      Online_Linkage: ftp://www.pasda.psu.edu/pub/pasda/dem24k_10m/bushkill_pa.zip
+      Larger_Work_Citation:
+        Citation_Information:
+          Originator: U.S. Geological Survey
+          Publication_Date: Unknown
+          Title: 7.5 Minute Digital Elevation Models
+          Publication_Information:
+            Publication_Place: Reston, Virginia
+            Publisher: U.S. Geological Survey
+          Other_Citation_Details: none
+          Online_Linkage: http://edcwww.cr.usgs.gov/doc/edchome/ndcdb/ndcdb.html
+  Description:
+    Abstract:
+      Digital Elevation Model (DEM) is the terminology adopted by the
+      USGS to describe terrain elevation data sets in a digital raster form. The
+      standard DEM consists of a regular array of elevations cast on a designated
+      coordinate projection system. The DEM data are stored as a series of
+      profiles in which the spacing of the elevations along and between each
+      profile is in regular whole number intervals. The normal orientation of
+      data is by columns and rows. Each column contains a series of elevations
+      ordered from south to north with the order of the columns from west to
+      east. The DEM is formatted as one ASCII header record (A-record),
+      followed by a series of profile records (B-records) each of which include
+      a short B-record header followed by a series of ASCII integer elevations
+      per each profile. The last physical record of the DEM is an accuracy record
+      (C-record).
+      7.5-minute DEM (10- by 10-meter data spacing, cast on Universal Transverse
+      Mercator (UTM) projection). Provides coverage in 7.5- by 7.5-minute
+      blocks. Each product provides the same coverage as a standard USGS
+      7.5-minute quadrangle without over edge. Coverage is for the Contiguous
+      United States, Hawaii, and Puerto Rico.
+    Purpose:
+      DEM's can be used as source data for digital orthophotos, and, as
+      layers in geographic information systems, for earth science analysis. DEM's
+      can also serve as tools for volumetric analysis, for site location of
+      towers, or for drainage basin delineation. These data were collected as
+      part of the National Mapping Program.
+    Supplemental_Information:
+      7.5-minute DEM's have rows and columns which vary in length and are staggered.
+      The UTM bounding coordinates form a quadrilateral (no two sides are parallel
+      to each other), rather than a rectangle. The user will need to pad out the
+      uneven rows and columns with blanks or flagged data values, if a rectangle is
+      required for the user's application. Some software vendors have incorporated
+      this function into their software for input of standard formatted USGS DEMs.
+  Time_Period_of_Content:
+    Time_Period_Information:
+      Single_Date/Time:
+        Calendar_Date: 20010920
+    Currentness_Reference: publication date
+  Status:
+    Progress: Complete
+    Maintenance_and_Update_Frequency: Irregular
+  Spatial_Domain:
+    Bounding_Coordinates:
+      West_Bounding_Coordinate: -75.125
+      East_Bounding_Coordinate: -75
+      North_Bounding_Coordinate: 41.125
+      South_Bounding_Coordinate: 41
+  Keywords:
+    Theme:
+      Theme_Keyword_Thesaurus: none
+      Theme_Keyword: dem
+      Theme_Keyword: digital elevation model
+      Theme_Keyword: digital terrain model
+      Theme_Keyword: hypsography
+      Theme_Keyword: altitude
+      Theme_Keyword: height
+      Theme_Keyword: contour line
+      Theme_Keyword: digital contours
+      Theme_Keyword: relief
+    Place:
+      Place_Keyword_Thesaurus: none
+      Place_Keyword: Bushkill Quadrangle
+      Place_Keyword: Pennsylvania
+  Access_Constraints: none
+  Use_Constraints:
+    None. Acknowledgement of the U.S. Geological Survey would
+    be appreciated in products derived from these data.
+  Point_of_Contact:
+    Contact_Information:
+      Contact_Organization_Primary:
+        Contact_Organization: U.S. Geological Survey
+      Contact_Address:
+        Address_Type: mailing address
+        Address: 508 National Center
+        City: Reston
+        State_or_Province: VA
+        Postal_Code: 22092
+      Contact_Voice_Telephone: 1-800 USA MAPS
+Data_Quality_Information:
+  Attribute_Accuracy:
+    Attribute_Accuracy_Report: The accuracy of a DEM is dependent upon the level of detail of the source and the grid spacing used to sample that source. The primary limiting factor for the level of detail of the source is the scale of the source materials. The proper selection of grid spacing determines the level of content that may be extracted from a given source during digitization.
+  Logical_Consistency_Report: The fidelity of the relationships encoded in the data structure of the DEM are automatically verified using a USGS software program upon completion of the data production cycle. The test verifies full compliance to the DEM specification.
+  Completeness_Report:
+    The DEM is visually inspected for completeness on a DEM view and edit system for the purpose of performing a final quality control and if necessary edit of the DEM. The physical format of each digital elevation model is validated for content completeness and logical consistency during production quality control and prior to archiving in the National Digital Cartographic Data Base.
+
+    Due to the variable orientation of the quadrilateral in relation to the Universal Transverse Mercator (UTM) projection grid, profiles that pass within the bounds of the DEM quadrilateral, may be void of elevation grid points, and are not represented in the DEM. This condition occurs infrequently and is always the first or last profile of the dataset.
+
+    Level 2 DEM: Level 2 DEM's may contain void areas due to interruptions to contours in the source graphic or DLG. Void area elevation grid posts are assigned the value of -32,767. In addition, suspect elevation areas may exist in the DEM but are not specifically identified. Suspect areas can be located on the source graphic as a "disturbed surface, " symbolized by contours overprinted with photorevised or other surface patterns.  
+  Positional_Accuracy:
+    Horizontal_Positional_Accuracy:
+      Horizontal_Positional_Accuracy_Report:
+        The horizontal accuracy of the DEM is expressed as an estimated root mean square error (RMSE).  The estimate of the RMSE is based upon horizontal accuracy tests of the DEM source materials which are selected as equal to or less than intended horizontal RMSE error of the DEM.
+         
+        The testing of horizontal accuracy of the source materials isaccomplished by comparing the planimetric (X and Y) coordinates of well-defined  ground points with the coordinates of the same points as determined from a source of higher  accuracy.
+    Vertical_Positional_Accuracy:
+      Vertical_Positional_Accuracy_Report:
+        The vertical RMSE statistic is used to describe the vertical accuracy of a DEM, encompassing both random and systematic errors introduced during production of the data. The RMSE is encoded in element number 5 of record C of the DEM.
+         
+        Accuracy is computed by a comparison of linear interpolated elevations in the DEM with corresponding known elevations. Test points are well distributed, representative of the terrain, and have true elevations with accuracies well within the DEM accuracy criteria.  Acceptable test points include, in order of preference: field control, aerotriangulated test points, spot elevations, or points on contours from existing source maps with appropriate contour interval.  A minimum of 28 test points per DEM is required to compute the RMSE, which is composed of a single test using 20 interior points and 8 edge points. Edge points are those which are located along, at, or near the quadrangle neatlines and are deemed by the editor to be useful to evaluating the accuracy of the edge of the DEM. Collection of test point data and comparison of the DEM with the quadrangle hypsography are conducted by the quality control units within the USGS.
+
+        There are three types of DEM vertical errors; blunder, systematic and random.  These errors are reduced in magnitude by editing but cannot be completely eliminated. Blunder errors are those errors of major proportions and are easily identified and removed during interactive editing. Systematic errors are those errors that follow some fixed pattern and are introduced by data collection procedures and systems. These error artifacts include: vertical elevation shifts, misinterpretation of terrain surface due to trees, buildings and shadows, and fictitious ridges, tops, benches or striations.  Random errors result from unknown or accidental causes.
+
+        DEM's are edited to correctly depict elevation surfaces that correspond to water bodies of specified size.
+
+        Level 1 DEM: A RMSE of 7-meters or less is the desired accuracy standard. A RMSE of 15-meters is the maximum permitted. A 7.5-minute DEM at this level has an absolute elevation error tolerance of 50 meters (approximately three times the 15-meter RMSE) for blunder errors for any grid node when compared to the true elevation.  Any array of points in the DEM can not encompass more than 49 contiguous elevations in error by more than 21 meters (three times the 7-meter RMSE).  Systematic errors that are within stated accuracy standards are tolerated.
+
+        Level 2 DEM:  A vertical RMSE of one-half of the contour interval, determined by the source map, is the maximum permitted.  Systematic errors may not exceed one contour interval, determined by the source map, is the maximum permitted.  Systematic errors may not exceed one contour interval specified by the source graphic.  Level 2 DEMs have been processed or smoothed for consistency and edited to remove identifiable systematic errors.
+  Lineage:
+    Source_Information:
+      Source_Citation:
+        Citation_Information:
+          Originator: U.S. Geological Survey
+          Publication_Date: Unknown
+          Title: digital contour lines
+          Publication_Information:
+            Publication_Place: Reston, Virginia
+            Publisher: U.S. Geological Survey
+      Type_of_Source_Media: magnetic tape
+      Source_Time_Period_of_Content:
+        Time_Period_Information:
+          Range_of_Dates/Times:
+            Beginning_Date: Unknown
+            Ending_Date: Present
+        Source_Currentness_Reference: ground condition
+      Source_Citation_Abbreviation: CONTOUR1
+      Source_Contribution: Hypsographic vector information which is interpolated to regular grid posts to form DEM grids in 30- by 30- meter UTM data spacing within the 7.5 minute DEM bounds.
+    Source_Information:
+      Source_Citation:
+        Citation_Information:
+          Originator: U.S. Geological Survey
+          Publication_Date: Unknown
+          Title: ariel photograph ID number
+          Geospatial_Data_Presentation_Form: remote-sensing image
+          Publication_Information:
+            Publication_Place: Reston, Virginia
+            Publisher: U.S. Geological Survey
+      Type_of_Source_Media: transparency
+      Source_Time_Period_of_Content:
+        Time_Period_Information:
+          Range_of_Dates/Times:
+            Beginning_Date: Unknown
+            Ending_Date: Present
+        Source_Currentness_Reference: ground condition
+      Source_Citation_Abbreviation: PHOTO1
+      Source_Contribution: elevation values
+    Source_Information:
+      Source_Citation:
+        Citation_Information:
+          Originator: U.S. Geological Survey
+          Publication_Date: Unknown
+          Title: project control
+          Geospatial_Data_Presentation_Form: map
+          Publication_Information:
+            Publication_Place: Reston, Virginia
+            Publisher: U.S. Geological Survey
+      Type_of_Source_Media: magnetic tape
+      Source_Time_Period_of_Content:
+        Time_Period_Information:
+          Range_of_Dates/Times:
+            Beginning_Date: Unknown
+            Ending_Date: Present
+        Source_Currentness_Reference: ground condition
+      Source_Citation_Abbreviation: CONTROL1
+      Source_Contribution: ground control points
+    Process_Step:
+      Process_Description:
+        The production procedures, instrumentation, hardware
+        and software used in the collection of standard U.S. Geological Survey
+        Digital Elevation Models (DEM's) vary depending on systems used at the
+        contractor, cooperator or National Mapping Division (NMD) production
+        sites. This process step describes, in general, the process used in the
+        production of standard USGS DEM datasets.
+        Level 1 DEM: Level 1 DEM's are acquired photogrammetrically by manual
+        profiling or image correlation techniques from National Aerial Photography
+        Program (NAPP) or equivalent source photographs. Level 1 30-minute DEM's
+        may be derived or resampled from level 1 7.5-minute DEM's.
+        Level 2 DEM: Level 2 DEM's are produced by converting 1:24,000-scale and
+        1:100,000-scale hypsography digital line graph (DLG) data to DEM format
+        or the DEM's are generated from vector data derived from scanned raster
+        files of USGS 1:24,000-scale or 1:100,000-scale map series contour
+        separates.
+        Level 3 DEM: Level 3 DEM's are created from DLG data that has been
+        vertically integrated with all categories of hypsography, hydrography,
+        ridge line, break line, drain files and all vertical and horizontal control
+        networks. The production of level 3 DEM's requires a system of logic
+        incorporated into the software interpolation algorithms that clearly
+        differentiates and correctly interpolates between the various types of
+        terrain, data densities and data distribution.
+        Water Body Editing: DEM surface areas corresponding to water bodies are
+        flattened and assigned map specified or estimated surface elevations. Water
+        body areas are defined as ponds, lakes, and reservoirs that exceed 0.5
+        inches at map scale and double line drainage that exceeds 0.25 inches at
+        map scale. Water body shorelines are derived either from a hypsographic DLG
+        or by interactive delineation from 1:24,000-scale or 1:100,000-scale USGS
+        map series.
+        Edge Matching: DEM datasets within a project area (consisting of a number
+        of adjacent files) are edge matched to assure terrain surface continuity
+        between files. Edge matching is the process of correcting adjacent
+        elevation values along common edges. The objective of edge matching is to
+        create more accurate terrain representations by correcting the alignment of
+        ridges and drains, and overall topographic shaping within an approximately
+        25-30 row or column grid post zone on both edges.
+        Quality Control: DEM's are viewed on interactive editing systems to
+        identify and correct blunder and systematic errors. DEM's are verified for
+        physical format and logical consistency at the production centers and
+        before archiving in the National Digital Cartographic Data Base (NDCDB)
+        utilizing the Digital Elevation Model Verification System (DVS) software.
+      Source_Used_Citation_Abbreviation: CONTOUR1, PHOTO1, CONTROL1
+      Process_Date: Unknown
+Spatial_Data_Organization_Information:
+  Direct_Spatial_Reference_Method: raster
+  Raster_Object_Information:
+    Raster_Object_Type: grid cell
+Spatial_Reference_Information:
+  Horizontal_Coordinate_System_Definition:
+    Planar:
+      Grid_Coordinate_System:
+        Grid_Coordinate_System_Name: Universal Transverse Mercator
+        Universal_Transverse_Mercator:
+          UTM_Zone_Number: 18
+          Transverse_Mercator:
+            Scale_Factor_at_Central_Meridian: .9996
+            Longitude_of_Central_Meridian: -123.000
+            Latitude_of_Projection_Origin: 0.0
+            False_Easting: 500000
+            False_Northing: 0.0
+      Planar_Coordinate_Information:
+        Planar_Coordinate_Encoding_Method: row and column
+        Coordinate_Representation:
+          Abscissa_Resolution: 10
+          Ordinate_Resolution: 10
+        Planar_Distance_Units: meters
+    Geodetic_Model:
+      Horizontal_Datum_Name: North American Datum of 1927
+      Semi-major_Axis: 6378206.4
+      Denominator_of_Flattening_Ratio: 294.9787
+  Vertical_Coordinate_System_Definition:
+    Altitude_System_Definition:
+      Altitude_Datum_Name: National Geodetic Vertical Datum of 1929
+      Altitude_Resolution: .001
+      Altitude_Distance_Units: meters
+      Altitude_Encoding_Method: Explicit elevation coordinate included with horizontal coordinates
+Entity_and_Attribute_Information:
+  Overview_Description:
+    Entity_and_Attribute_Overview:
+      The digital elevation model is composed of a 6-character integer raster representing a gridded
+      form of a topographic map hypsography overlay. Each raster entity contains a 6-character integer value
+      between -32,767 to 32,768.
+    Entity_and_Attribute_Detail_Citation:
+      U.S.Department of the Interior, U.S. Geological Survey, Digital Elevation Models -- Data Users Guide; Reston, VA,
+
+      A hypertext extract is available at: URL: http://edcwww.cr.usgs.gov/glis/hyper/guide/usgs_dem
+
+      Softcopies in ASCII and WordPerfect format are available at: URL: ftp://mapping.usgs.gov/pub/ti/DEM/
+
+      U.S.Department of the Interior, U.S. Geological Survey, 1992, Standards for digital elevation models: Reston, VA,
+
+      Softcopies in ASCII and WordPerfect format are available at: URL: ftp://mapping.usgs.gov/pub/ti/DEM/ 
+Distribution_Information:
+  Distributor:
+    Contact_Information:
+      Contact_Organization_Primary:
+        Contact_Organization: Pennsylvania Spatial Data Access (PASDA)
+      Contact_Address:
+        Address_Type: mailing address
+        Address: Land and Water Building
+        City: University Park
+        State_or_Province: PA
+        Postal_Code: 16802
+        Country: USA
+      Contact_Electronic_Mail_Address: pasda@psu.edu
+  Distribution_Liability: The USER shall indemnify, save harmless, and, if requested, defend those parties involved with the development and distribution of this data, their officers, agents, and employees from and against any suits, claims, or actions for injury, death, or property damage arising out of the use of or any defect in the FILES or any accompanying documentation. Those parties involved with the development and distribution excluded any and all implied warranties, including warranties or merchantability and fitness for a particular purpose and makes no warranty or representation, either express or implied, with respect to the FILES or accompanying documentation, including its quality, performance, merchantability, or fitness for a particular purpose. The FILES and documentation are provided "as is" and the USER assumes the entire risk as to its quality and performance. Those parties involved with the development and distribution of this data will not be liable for any direct, indirect, special, incidental, or consequential damages arising out of the use or inability to use the FILES or any accompanying documentation.
+  Standard_Order_Process:
+    Digital_Form:
+      Digital_Transfer_Information:
+        Format_Name: DEM
+        File_Decompression_Technique: zip
+        Format_Information_Content: USGS standard DEM: The standard USGS DEM can be described as an ASCII formatted elevation file preceded by a metadata header file which consists of one 1024 byte ACSII record as .txt file.  Archive also contains full FGDC metadata in text, HTML and XML format.
+        Transfer_Size: 1-2.7 MB
+      Digital_Transfer_Option:
+        Online_Option:
+          Computer_Contact_Information:
+            Network_Address:
+              Network_Resource_Name: ftp://www.pasda.psu.edu/pub/pasda/dem24k_10m/bushkill_pa.zip
+Distribution_Information:
+  Distributor:
+    Contact_Information:
+      Contact_Organization_Primary:
+        Contact_Organization: Earth Science Information Center, U.S. Geological Survey
+      Contact_Address:
+        Address_Type: mailing address
+        Address: 507 National Center
+        City: Reston
+        State_or_Province: VA
+        Postal_Code: 22092
+      Contact_Voice_Telephone: 1-800 USA MAPS
+      Contact_Instructions:
+        In addition to the address above there are other ESIC
+        offices throughout the country.  A full list of these offices is at:  URL
+        http://www-nmd.usgs.gov/esic/esic_index.html
+    Distribution_Liability:
+      Although these data have been processed
+      successfully on a computer system at the U.S. Geological Survey, no
+      warranty expressed or implied is made by the Geological Survey regarding
+      the utility of the data on any other system, nor shall the act of
+      distribution constitute any such warranty. USGS will warrant the delivery
+      of this product in computer-readable format and will offer appropriate
+      adjustment of credit when the product is determined unreadable by correctly
+      adjusted computer input peripherals, or when the physical medium is
+      delivered in damaged condition. Requests for adjustments of credit must be
+      made within 90 days from the date of this shipment from the ordering date.
+  Standard_Order_Process:
+    Digital_Form:
+      Digital_Transfer_Information:
+        Format_Name: DEM
+        File_Decompression_Technique: ZIP
+        Format_Information_Content:
+          USGS standard DEM:  The standard USGS DEM can be described as an ASCII formatted elevation file preceded by a metadata
+          header file which consists of one 1024 byte ACSII record.
+      Digital_Transfer_Option:
+        Online_Option:
+          Computer_Contact_Information:
+            Network_Address:
+              Network_Resource_Name: http://edcwww.cr.usgs.gov/doc/edchome/ndcdb/ndcdb.html
+    Fees: none
+Metadata_Reference_Information:
+  Metadata_Date: 20030405
+  Metadata_Contact:
+    Contact_Information:
+      Contact_Organization_Primary:
+        Contact_Organization: Pennsylvania Spatial Data Access (PASDA)
+      Contact_Position: Metadata Coordinator
+      Contact_Address:
+        Address_Type: mailing address
+        Address: 115 Land and Water Building
+        City: University Park
+        State_or_Province: PA
+        Postal_Code: 16802
+        Country: USA
+      Contact_Voice_Telephone: 814-865-8792
+      Contact_Facsimile_Telephone: 814-865-3378
+      Contact_Electronic_Mail_Address: cxp7@psu.edu
+  Metadata_Standard_Name: Content Standards for Digital Geospatial Metadata
+  Metadata_Standard_Version: FGDC-STD-001-1998
