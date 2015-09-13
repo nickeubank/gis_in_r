@@ -142,7 +142,7 @@ Sometimes we know things about our spatial objects, like the name of a river, or
 [^3]: Coordinates should be of type double and will be promoted if not.
 
 
-## 2. Creating a spatial objects from scratch
+## 2. Creating a SpatialPoints object from scratch
 
 ### 2.1 Creating Points from Scratch
 
@@ -185,7 +185,31 @@ str(xy.sp)
 ```
 
 
-#### Adding Attributes
+### 2.2 Coordinate Reference System: what makes SpatialPoints spatial
+
+Unlike a simple geometric object, a `SpatialPoints` object has the ability to keep track of how the points is knows about relate to places in the real world through an associated "Coordinate Reference System" (CRS -- the combination of a geographic coordinate system and a projection), which is stored using a code called a `proj4string`. The proj4string is so important to a `SpatialPoints` object, that it's presented right in the summary:
+
+```{r}
+summary(xy.sp)
+```
+
+In this case, however, while our `SpatialPoints` object clearly knows what a projection *is*, the Spatial object we just created __does not__ have a projection or geographic coordinate system defined. It is ok to plot, but be aware that for any meaningful spatial operation you will need to define a CRS. 
+
+CRS objects can be created by passing the `CRS()` function the code associated with a known projection. You can find the codes for most commonly used projections from [www.spatialreference.org](www.spatialreference.org). 
+
+Note that the same CRS can often be called in many ways. For example, one of the most commonly used CRS is the WGS84 latitude-longitude projection. You can create a WGS84 lat-long projection object by either passing the reference code for the projection --  `CRS("+init=EPSG:4326"`) -- or by directly calling all its relevant parameters -- `CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")`.
+
+10. Here's an illustration of assigning a CRS:
+```{r eval=FALSE}
+is.projected(ph.df) # see if a projection is defined  
+crs.geo <- CRS("+init=EPSG:4326")  # geographical, datum WGS84
+proj4string(ph.df) <- crs.geo  # define projection system of our data
+```
+
+We'll talk more about managing projections in the next lesson. 
+
+
+### 2.3 Adding Attributes
 
 Moving from a `SpatialPoints` to a `SpatialPointsDataFrame` occurs when you add a DataFrame of attributes to the points. Let's just add an arbitrary table to the data -- this will label each point with a letter and a number.   
 
@@ -206,9 +230,9 @@ plot(xy.spdf[which(xy.spdf$attr2>5),])    # select if attr2 > 5
 
 ***
 
-### 2.2 Creating a SpatialPoint Object from a lat/lon table
+### 2.4 Creating a SpatialPoint Object from a lat/lon table
 
-A `SpatialPointsDataFrame` object can be created directly from `data.frames` by specifying which columns contain the coordinates. This is interesting, for example if you have a spreadsheet that contains latitude, longitude and some values. You an read this into a data frame with `read.table`, and then create the object from the data frame in one step by using the `coordinates()` command. That automatically turns the dataframe object into a `SpatialPointsDataFrame`:
+A `SpatialPointsDataFrame` object can be created directly from `data.frames` by specifying which columns contain the coordinates. This is interesting, for example if you have a spreadsheet that contains latitude, longitude and some values. You an read this into a data frame with `read.table`, and then create the object from the data frame in one step by using the `coordinates()` command. That automatically turns the dataframe object into a `SpatialPointsDataFrame`.
 
 
 ***
@@ -231,26 +255,12 @@ What to you observe?
 
 9. Plot restaurants with terrible scores by subsetting on `Score`. 
 
-### 2.3 A brief, but important word about projection.
-
-Note that the Spatial object you just created __does not__ have a projection defined. It is ok to plot, but be aware that for any meaningful spatial operation you will need to define a projection. 
-
-Projection objects can be created by passing the `CRS()` function the code associated with a known projection. You can find the codes for most commonly used projections from [www.spatialreference.org](www.spatialreference.org). 
-
-Note that the same project can often be called in many ways. For example, one of the most commonly used projections is the WGS84 latitude-longitude projection. You can create a WGS84 lat-long projection object by either passing the reference code for the projection --  `CRS("+init=EPSG:4326"`) -- or by directly calling all its relevant parameters -- `CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")`.
-
-10. Here's an illustration of assigning a projection:
-```{r eval=FALSE}
-is.projected(ph.df) # see if a projection is defined  
-crs.geo <- CRS("+init=EPSG:4326")  # geographical, datum WGS84
-proj4string(ph.df) <- crs.geo  # define projection system of our data
-```
-
-We'll talk more about managing projections in the next lesson. 
 
 ***
 
-### 2.4 Creating Spatial Polygons
+## 3 Creating Spatial Polygons
+
+### 3.1 Building up Polygons
 
 The following example[^4] shows how a set of polygons are built from scratch. Polygons are built up from constituent parts, from `Polygon` objects to `Polygons` objects to `SpatialPolygons`. 
 
@@ -275,13 +285,22 @@ Srs2 <-  Polygons(list(Sr2), "s2")
 Srs3 <-  Polygons(list(Sr3, Sr4), "s3/4")
 
 # create spatial polygons object from lists
-# A SpatialPolygons is like a shapefile. 
+# A SpatialPolygons is like a shapefile or layer. 
 SpP <-  SpatialPolygons(list(Srs1,Srs2,Srs3), 1:3)
 plot(SpP)
 ```
 
+### 3.2 Projections
+Projections work the same way for `SpatialPolygons` as for `SpatialPoints`.
 
-### 2.5 Adding Attributes to SpatialPolygon
+```{r eval=FALSE}
+is.projected(SpP) # see if a projection is defined  
+crs.geo <- CRS("+init=EPSG:4326")  # geographical, datum WGS84
+proj4string(SpP) <- crs.geo  # define projection system of our data
+```
+
+
+### 3.3 Adding Attributes to SpatialPolygon
 In order to add attributes to the polygons the `row.names` of the attributes data frame are matched with the ID slots of the SpatialPolygons object, and the rows of the data frame will be re-ordered if necessary.
 
 Make attributes:
@@ -314,11 +333,12 @@ SrDf@data
 [^4]:from [Edzer Pebesma Roger S. Bivand Feb 2005: S Classes and Methods for Spatial Data: the sp Package](http://cran.r-project.org/web/packages/sp/vignettes/intro_sp.pdf) 
 
 
-## 3. Getting spatial data in and out of R 
+
+## 4. Getting spatial data in and out of R 
 
 The good news is that typically we do not have to create `Spatial` family objects as tediously as we did above. It is much more common that we work with already existing spatial data. 
 
-### 3.1 How to work with `rgdal`
+### 4.1 How to work with `rgdal`
 
 In order to read those into R and turn them into `Spatial*` family objects we rely on the `rgdal` package. It provides us direct access to the powerful [GDAL library](http://gdal.org) from within R. 
 
@@ -358,6 +378,6 @@ readOGR("sf", "sf_incomes")
 
 ***
 
-## 4. Further resources
+## 5. Further resources
 
 As of 2015-03-10 there are 134 [R packages on CRAN for reading, visualising, and analysing (geographical) spatial data](http://cran.r-project.org/web/views/Spatial.html). I recommend to visit that website if you are exploring spatial analysis with R.

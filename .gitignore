@@ -48,6 +48,6 @@ Thumbs.db
 ####################
 *_files
 *_cache
-.html
+*.html
 rsconnect
 
