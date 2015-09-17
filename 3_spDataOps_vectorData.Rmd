@@ -14,7 +14,6 @@ output:
 ```{r knitr_init, echo=FALSE, cache=FALSE}
 library(knitr)
 library(rmdformats)
-
 ## Global options
 options(max.print="75")
 opts_chunk$set(echo=TRUE,
@@ -25,6 +24,16 @@ opts_chunk$set(echo=TRUE,
                message=FALSE,
                warning=FALSE)
 opts_knit$set(width=75)
+
+library(rgdal)
+library(sp)
+library(rgeos)
+
+sf<-readOGR("sf",'sf_incomes')
+sf.ft<-readOGR("sf",'sf_foodtrucks')
+newcrs<-CRS(proj4string(sf))
+sf.ft.newproj <- spTransform(sf.ft, newcrs)
+
 ```
 
 ***
@@ -111,6 +120,7 @@ plot(sf.ft.newproj, axes=TRUE)
 
 You should see something like:
 
+
 ![different projections of the same points](images/sf_ft_projs.png)
 
 ***
@@ -172,48 +182,52 @@ spplot (philly, "JN9E032")
 
 [^1]: Per the [ESRI specification](http://www.esri.com/library/whitepapers/pdfs/shapefile.pdf) a shapefile always has an attribute table, so when we read it into R with the `readOGR` command from the `sp` package it automatically becomes a `Spatial*Dataframe` and the attribute table becomes the dataframe.
 
-# 3. Spatial join: Points in Polygons
+# 3. Spatial Joins -- The `over` Command
 
 Spatial joins are frequent topological operations. Unlike an attribute join -- which works similarly to a merge or join with non-spatial data -- a spatial join in your first purely spatial operation. In a spatial join, observations from different datasets are joined based not on a variable, but by their relationship in space.
 
 Because a spatial join relates observations based on their relative positions in space, spatial joins are a way of relating two sets of spatial objects, rather than relating one set of spatial objects with data in a table (like an attribute join).
 
-For the next exercise we want to count all the block parties that occur *within* each census tract in San Francisco. To achieve this this we join the points of block parties to the census tract polygon. You might be familiar with this operation from other GIS packages.
+They primary tool for doing spatial joins is the `over` command from the `sp` library. The exact behavior of `over` depends on the inputs being used, but the basic sytax is "For each item of first argument, give me information about the intersecting item of second argument".
 
-In R will use the `aggregate()` function from the `sp` package[^3]. Here are our parameters:
+For example, if I wanted to get information on the census tract of every food truck:
 
-* the `SpatialPointDataframe`, 
-* the `SpatialPolygonDataframe` to use for spatial aggregation and  
-* a function to use to aggregate. If we are just interested in counting the points, we can use `length` (of the respective vectors of the aggregated data). 
-
-***
-### Exercise 3
-
-#. Our points are _sf.bp.newproj_ and our polygons are _sf_. The points file has many attribute data (check with `names()`), and we only really need one of those columns to add it up to the count. We choose here _"locatnd"_, but you could choose any other one and it will give the same result. So in order to aggregate we say:
-```
-ft.count <- aggregate(x = sf.ft.newproj["locatnd"], by = sf, FUN = length)
+```{r}
+truck.home.tract <- over(sf.ft.newproj,sf)
+head(truck.home.tract)
 ```
 
-#. Now let us investigate the object we created.
+Note that because `sf` is a `SpatialPolygonDataFrame`, `over` returned the relevant row of data for each point. If sf did not have any data, we would just get the index of the home polygon for each truck. We can see this behavior if we use the `geometry()` function to strip away the DataFrame:
+
+
+```{r}
+truck.home.tract.index <- over(sf.ft.newproj,geometry(sf))
+head(truck.home.tract.index)
 ```
-class(ft.count)
-names(ft.count)
-spplot(ft.count)
+
+
+
+## Aggregating intersected items
+One situation to be aware of is when each item in the first argument potentially intersects more than one item in the second argument. For example, if we asked "what food trucks are in each census tract?", there would obviously be many food trucks per tract. 
+
+By default, when multiple items intersect an item in the first argument, `over` will just return the first one. However, if the second item has a DataFrame associated with it, it is possible to ask `over` to aggregate the multiple items. 
+
+For example, if we add a column of 1s to our food truck data, then ask `over` to sum up that column, we get back the number of food trucks in each census tract. 
+
+```{r}
+sf.ft.newproj@data$counter<-1
+num.food.trucks <- over(sf,sf.ft.newproj[,'counter'], fn=sum)
+num.food.trucks$counter[is.na(num.food.trucks$counter)] <- 0  # fill in zeros.
+head(num.food.trucks,12)
 ```
 
-***
+If we had other information on food trucks -- like their value -- we could also ask for things like their mean value by passing the `mean` function. 
 
-[^3]: There is also an `aggregate()` function in the `stats` package that comes with the R standard install. Note that `sp` extends this function so it can take `Spatial*` objects and aggregate over the geometric features.
+# 4. General Geometric Operations
 
+Most geometric operations -- like creating buffers, creating geometric intersections, unions of polygons, etc. -- are executed using the `rgeos` library. Whenever you're thinking about a geometric operation, `rgeos` is the first place to look. Exact behavior depends on the tool in question, but here's a fun example:
 
-# 4. Select Polygons by Location
-
-NOTE: For the following example we will need to make use of another library, called `rgeos`. 
-
-```{r eval=FALSE}
-install.packages("rgeos")
-```
-works for Windows, and perhaps for Mac. If not, see [here](http://dyerlab.bio.vcu.edu/2015/03/31/install-rgeos-on-osx/).
+### Exercise
 
 Our goal is to select all SF census tracts that fall within a range of 2 kilometers of Bi-Rite Ice Cream. 
 
@@ -226,8 +240,7 @@ Here is one, but not the only way to do this.
 #. Create a buffer around the center
 #. Select all polys that fall in the buffer
 
-
-### Exercise 4
+Let's do it! 
 
 #. Get the polygons.  
 Got those.  
@@ -287,7 +300,7 @@ plot (birite.buf, add=T, lwd = 2)
 
 ````
 
-![Philly Selection](images/birite.png)
+![Bi-Rite Selection](images/birite.png)
 
 
 
