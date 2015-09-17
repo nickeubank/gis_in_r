@@ -31,42 +31,15 @@
 \maketitle
 % \begin{multicols}{2}
 
-%%%%%%%%%%
-% Installing
-%%%%%%%%%%
-	
-\centerline{\textbf{Installation of Relevant Packages}}
-\textbf{Packages:}
-\begin{itemize}
-	\item \texttt{sp}: tools for vector spatial data
-	\item \texttt{rgdal}: tools for reading and writing files in different formats
-\end{itemize}
-\textbf{Installation:}\\
-Update R to version $>$ 3.1.\\
-On Windows:
-\begin{itemize}
-	\item \texttt{install.packages(``sp''}
-	\item \texttt{install.packages(``rgdal'')}
-\end{itemize}
-On OSX:
-	\begin{itemize}
-		\item \texttt{install.packages(c(``sp'',``raster''))}
-		\item Download and install 	\href{http://www.kyngchaos.com/files/software/frameworks/GDAL_Complete-1.11.dmg}{\underline{GDAL Complete}}
-		\item Download \href{http://www.kyngchaos.com/files/software/frameworks/rgdal-0.9.1-1.dmg}{\underline{rgdal}} package. 
-		\item Open .dmg file and place \texttt{rgdal\_0.9-1.tgz} on desktop.
-		\item Run \texttt{install.packages("$\sim$/Desktop/rgdal\_0.9-1.tgz",repos=NULL)}
-	\end{itemize}
 
 
-
-\section*{Building and Managing Vector Objects}
 
 %%%%%%%%%%
 % Creating from Scratch
 %%%%%%%%%%
-
-\centerline{\textbf{Creating Spatial Objects From Scratch}} 
-\underline{\textbf{Points:}}\\
+\hrulefill 
+\subsection*{Creating Spatial Objects From Scratch}
+\underline{\textbf{Creating Points:}}
 
 \textbf{Points}: \texttt{SpatialPoints([matrix of coordinates])}
 \begin{itemize}
@@ -74,23 +47,23 @@ On OSX:
 \end{itemize}
 \textbf{Points with DF}: \texttt{SpatialPointsDataFrame([Spatial Points Obj], [DataFrame])}\\
 \\
-\underline{\textbf{Lines:}}\\
+\underline{\textbf{Creating Lines:}}
 
 \textbf{Line (single geometric line)}: \texttt{Line([matrix of coordinates of vertices])}\\
-\textbf{Lines (single ``observations'' potentially consisting of several basic lines, like a river)}:\\ 
+\textbf{Lines (single "observations" potentially consisting of several basic lines, like a river)}:\\ 
 \hspace*{1cm} \texttt{Lines([list of Line Objs], [name for Lines objs])}\\
-\textbf{SpatialLines (collection of ``observations'', like shapefile)}: \\
-\hspace*{1cm} \texttt{SpatialLines([list of Line\textbf{s} Objs], [Lines plotting order])}\\
+\textbf{SpatialLines (collection of "observations", like shapefile)}: \\
+\hspace*{1cm} \texttt{SpatialLines([list of Line\textbf{s} Objs])}\\
 \textbf{Spatial Lines with DF}: \texttt{SpatialLinesDataFrame([SpatialLines Obj, DataFrame])}\\
 \\
-\underline{\textbf{Polygons:}} \\
+\underline{\textbf{Polygons:}}
 
 \textbf{Polygon (one geometric shape defined by a single enclosing line)}: \\
 \hspace*{1cm}\texttt{Polygon([matrix of coordinates of vertices])} \\
-\textbf{Polygons (single ``observations'' potentially consisting of several basic shapes)}:\\ 
+\textbf{Polygons (single "observations" potentially consisting of several basic shapes)}:\\ 
 \hspace*{1cm} \texttt{Polygons([list of Polygon Objs], [name for Polygons objs])}\\
-\textbf{SpatialPolygons (collection of ``observations'', like shapefile)}:\\
-\hspace*{1cm} \texttt{SpatialPolygons([list of Polygon\textbf{s} Objs], [Polygons plotting order])}\\
+\textbf{SpatialPolygons (collection of "observations", like shapefile)}:\\
+\hspace*{1cm} \texttt{SpatialPolygons([list of Polygon\textbf{s} Objs])}\\
 \textbf{Spatial Polygons with DF}: \texttt{SpatialPolygonsDataFrame([SpatialPolygons Obj, DataFrame])}
 \begin{itemize}
 	\item Note: will merge DataFrame with polygons by matching DataFrame \texttt{rownames} to the names of \texttt{Polygons}.
@@ -100,9 +73,9 @@ On OSX:
 % Load from Files
 %%%%%%%%%%
 
-\hrulefill \\ 
-\centerline{\textbf{Loading Spatial Objects from Files}} \\
-\underline{\textbf{GPS Coordinates in Table:}}\\
+\hrulefill 
+\subsection*{Importing and Exporting}
+\textbf{GPS Coordinates in Table:}
 \begin{enumerate}
 	\item Use \texttt{read.csv()} to import DataFrame with lat long coordinates.
 	\item \texttt{coordinates([DataFrame]) <- c([name of column with long],[name of column with lat])}
@@ -110,18 +83,22 @@ On OSX:
 		\item Note reverse ordering: longitude (x-coordinate), then latitude (y-coordinate).
 	\end{itemize}
 \end{enumerate}
-\underline{\textbf{Vector-Based Files:}}\\
+\textbf{Read Vector-Based Files:}\\
 \texttt{data <- readOGR(dsn=[path to FOLDER holding data], layer=[name of shapefile in folder])}
 \begin{itemize}
 	\item Note: do not include extension (like \texttt{.shp} in \texttt{layer} argument)
 \end{itemize}
-
+\textbf{Export Vector-Based Files:}\\
+\texttt{writeOGR([Spatial obj], dsn=[path to folder],layer=[name, no suffix], driver=[format])}
+\begin{itemize}
+	\item Shapefile: \texttt{driver="ESRI Shapefile"}. \href{http://www.gdal.org/ogr_formats.html}{\underline{Full format list}}
+\end{itemize}
 %%%%%%%%%%
 % Interrogating
 %%%%%%%%%%
 
-\hrulefill \\ 
-\centerline{\textbf{Interrogating Spatial Objects}} \\
+\hrulefill 
+\subsection*{Interrogating Spatial Objects}
 \underline{\textbf{Summaries:} }\\
 \textbf{Quick summary:} \texttt{summary([Spatial obj])}\\
 \textbf{Longer summary of contents:} \texttt{str([Spatial obj])}\\
@@ -137,18 +114,77 @@ On OSX:
 % Projections
 %%%%%%%%%%
 
-\hrulefill \\ 
-\centerline{\textbf{Managing Projections}} \\
-\href{http://www.spatialreference.org/}{\underline{\textbf{Projection code database}}} \\
-\hspace{0.3cm}
+\hrulefill 
+\subsection*{Projections}
 \textbf{Assigning projection by EPSG code:} \texttt{proj4string([Spatial obj]) <-CRS("+init=EPSG:4326")}\\
 \textbf{Get projection from Spatial obj:} \texttt{proj4string([Spatial obj])} \\
 \textbf{Re-project:} \\
 \hspace*{0.3cm}\texttt{newProjection <- CRS("projection string goes here")}\\
 \hspace*{0.3cm}\texttt{spTransform([Spatial object],newProjection)}\\
+\href{http://www.spatialreference.org/}{\underline{\textbf{Projection code database}}} \\
+
+%%%%%%%%%%
+% Spatial Operations
+%%%%%%%%%%
+
+\hrulefill 
+\subsection*{Spatial Operations}
+
+\textbf{Aggregate over points in polygon:} \\
+\texttt{aggregate([SpatialPoints column on which to compute], by=[SpatialPolygons], FUN=[function to execute for SpatialPoints column in each polygon])}\\
+\textbf{Buffer:} \texttt{gBuffer([SpatialPoints obj], width= [radius in projected units])}\\
+\textbf{Subset Intersecting Observations:}
+\begin{enumerate}
+	\item \texttt{select <- gIntersects(SpatialObject1,SpatialObject2,byid=TRUE)} 
+	\item \texttt{selected.SpatialObjects <- SpatialObject1[as.vector(select),]}
+\end{enumerate} 
+\textbf{Geometric Intersect:} \texttt{gIntersect(SpatialObject1,SpatialObject2,byid=TRUE)}
 
 
-\section*{Spatial Operations}
+%%%%%%%%%%
+% Installing
+%%%%%%%%%%
+\hrulefill 	
+\subsection*{Installation}
+\textbf{Packages:}
+\begin{itemize}
+	\item \texttt{sp}: tools for vector spatial data
+	\item \texttt{rgeos}: tools for distance operations (near, within, etc.)
+	\item \texttt{rgdal}: tools for reading and writing files in different formats
+\end{itemize}
+\textbf{Installation:}\\
+Update R to version $>$ 3.1.\\
+On Windows:
+\begin{itemize}
+	\item \texttt{install.packages("sp"}
+	\item \texttt{install.packages("rgdal")}
+	\item \texttt{install.packages("rgeos")}
+\end{itemize}
+On OSX:
+	\begin{itemize}
+		\item \texttt{install.packages(c("sp","raster"))}
+		\item Download and install 	\href{http://www.kyngchaos.com/files/software/frameworks/GDAL_Complete-1.11.dmg}{\underline{GDAL Complete}}
+		\item Download \href{http://www.kyngchaos.com/files/software/frameworks/rgdal-0.9.1-1.dmg}{\underline{rgdal}} package. 
+		\item Open .dmg file and place \texttt{rgdal\_0.9-1.tgz} on desktop.
+		\item Run \texttt{install.packages("$\sim$/Desktop/rgdal\_0.9-1.tgz",repos=NULL)}
+		\item Run \texttt{install.packages("rgeos", type = "source",} \\
+		\texttt{configure.args =} \\
+\texttt{"--with-geos-config=/Library/Frameworks/GEOS.framework/Versions/Current/unix/bin/geos-config")}
+	\end{itemize}
 
+\hrulefill
+\subsection*{Open-Source GIS Software Acronyms}
+GIS tools in R are based on a set of tools developed by the open-source community and which underlie a great many GIS tools beside those available in R, including tools in Python and several stand-alone applications (likeQGIS). As a result, there are a number of acronyms you’re likely to find if you start googling GIS tools – here’s a quick guide to them.
+\begin{itemize}
+	\item \textbf{OSGeo}: Open-Source Geospatial Foundation; the group the manages the ecosystem of open-source GIS software.
+	\item \textbf{GDAL}: Geospatial Data Abstraction Library. Once upon a time, OSGeo published two sets of tools – OGRfor working with vector data, and GDAL for working with raster data. In recent years, however, these toolshave converged, so GDAL usually used to refer to the full library created by OSGeo. In R, however, the older meanings often still apply, which is why readGDAL() is for reading raster data and readOGR() is for reading vector data.
+	\item \textbf{OGR}: OpenGIS Simple Features Reference (I think?). At one time OGR was the set of tools published byOSGeo for manipulating vector data. OGR is now officially a part of GDAL (which is why it comes in thergdal library).
+	\item \textbf{proj4}: proj4 is standard format for describing projections.
+	\item \textbf{GEOS}: Geometry Engine, Open Source. Set of tools for creating buffers, intersects, etc. the \texttt{rgeos} library is just a way of interfacing between R and this extremely fast and well-developed C++ library. 
+	\item \textbf{GRASS}: An OSGeo platform designed to unify the GDAL tools in a graphical user interface.• QGIS: An open-source program designed specifically to be an alternative to ArcGIS based on the GDALlibrary.
+	
+Want to know more? Check out the OSGeo FAQs!
+
+\end{itemize}
 
 \end{document}

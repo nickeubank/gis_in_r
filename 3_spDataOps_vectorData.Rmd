@@ -74,7 +74,8 @@ MyNewProjection <- CRS("definition of projection goes here as string")
 spTransform(MyCity, MyNewProjection)
 ```
 
-Note that you can also retrieve the CRS from an existing `Spatial*` object with the `proj4string()` command. 
+Note that you can also retrieve the CRS from an existing `Spatial*` object with the `proj4string()` command!
+
 
 ***
 
@@ -88,27 +89,29 @@ Note that you can also retrieve the CRS from an existing `Spatial*` object with 
 
 #. Load the `rgdal`, `sp`, and `dplyr` packages.
 
-#. Read the `PhillyHomicides` shapefile into R and name it `ph.hom`.
+#. Read in the `sf_incomes` shapefile into R and name it `sf`. 
 
-#. What is the CRS of `philly`?   What is the CRS of `ph.hom`?
+#. Read the `sf_foodtrucks` shapefile into R and name it `sf.ft`.
 
-#. Reproject `ph.hom` so it matches the projection of `philly` and assign it to a new object called `ph.hom.aea`.
+#. What is the CRS of `sf`?   What is the CRS of `sf_ft`?
+
+#. Reproject `sf.bp` so it matches the projection of `sf` and assign it to a new object called `sf.ft.newproj`.
 
 #. You can use the `range()` command from the R base package to compare the coordinates before and after repojection and confirm that you actually have transformed them. `range()` simply returns the _min_ and _max_ value of a vector of numbers that you give it. So you can check with:  
-`range(coordinates(ph.hom))`  
+`range(coordinates(sf.ft))`  
 and  
-`range(coordinates(ph.hom.aea))`  
+`range(coordinates(sf.ft.newproj))`  
 
 #. You can also compare them visually with:  
 ```
 par(mfrow=c(1,2)) 
-plot(ph.hom, axes=TRUE)
-plot(ph.hom.aea, axes=TRUE)
+plot(sf.ft, axes=TRUE)
+plot(sf.ft.newproj, axes=TRUE)
 ```
 
 You should see something like:
 
-![different projections of the same points](images/ph_homProj.png)
+![different projections of the same points](images/sf_ft_projs.png)
 
 ***
 
@@ -153,6 +156,8 @@ worldCountries@data <- data.frame(worldCountries@data, countryData[match(worldCo
 
 #. Load the CSV table `PhillyEducAttainment.csv` from the data loaded above into a dataframe in R and name it `education`.
 
+#. Load the shapefile `PhillyTotalPopHHinc` from the folder `philly`. 
+
 #. Check out the column names of `philly` and and of `education` to determine which one might contain the unique identifier for the join. Hint: use the `names()` command. (If you are interested in what those data are, you can take a look at the codebook _PhillyEducAttainment_nhgis2010_tract_codebook.txt_)
 
 #. Join the `education` data frame with `philly` using `left_join` as described above. Use the `names()` command to see if the join was successful.
@@ -173,7 +178,7 @@ Spatial joins are frequent topological operations. Unlike an attribute join -- w
 
 Because a spatial join relates observations based on their relative positions in space, spatial joins are a way of relating two sets of spatial objects, rather than relating one set of spatial objects with data in a table (like an attribute join).
 
-For the next exercise we want to count all the homicides that occur *within* each census tract in Philadelphia. To achieve this this we join the points of homicide incidence to the census tract polygon. You might be familiar with this operation from other GIS packages.
+For the next exercise we want to count all the block parties that occur *within* each census tract in San Francisco. To achieve this this we join the points of block parties to the census tract polygon. You might be familiar with this operation from other GIS packages.
 
 In R will use the `aggregate()` function from the `sp` package[^3]. Here are our parameters:
 
@@ -184,19 +189,16 @@ In R will use the `aggregate()` function from the `sp` package[^3]. Here are our
 ***
 ### Exercise 3
 
-#. Our points are _ph.hom.aea_ and our polygons are _philly_. The points file has many attribute data (check with `names()`), and we only really need one of those columns to add it up to the count. We choose here _"DC_DIST"_, but you could choose any other one and it will give the same result. So in order to aggregate we say:
+#. Our points are _sf.bp.newproj_ and our polygons are _sf_. The points file has many attribute data (check with `names()`), and we only really need one of those columns to add it up to the count. We choose here _"locatnd"_, but you could choose any other one and it will give the same result. So in order to aggregate we say:
 ```
-hom.cnt <- aggregate(x = ph.hom.aea["DC_DIST"], by = philly, FUN = length)
+ft.count <- aggregate(x = sf.ft.newproj["locatnd"], by = sf, FUN = length)
 ```
-(Try this for fun:  
-`hom.cnt1 <- aggregate(x = ph.hom["DC_DIST"], by = philly, FUN = length)`  
-and see what happens.)
 
 #. Now let us investigate the object we created.
 ```
-class(hom.cnt)
-names(hom.cnt)
-spplot(hom.cnt)
+class(ft.count)
+names(ft.count)
+spplot(ft.count)
 ```
 
 ***
@@ -213,7 +215,7 @@ install.packages("rgeos")
 ```
 works for Windows, and perhaps for Mac. If not, see [here](http://dyerlab.bio.vcu.edu/2015/03/31/install-rgeos-on-osx/).
 
-Our goal is to select all Philadelphia census tracts that fall within a range of 2 kilometers from the city center.
+Our goal is to select all SF census tracts that fall within a range of 2 kilometers of Bi-Rite Ice Cream. 
 
 > Think about this for a moment -- what might be the steps you'd follow?
 
@@ -229,35 +231,35 @@ Here is one, but not the only way to do this.
 
 #. Get the polygons.  
 Got those.  
-We will reuse `philly` for the census tract polygons.
+We will reuse `sf` for the census tract polygons.
 
 #. Find the city center coordinates.  
-Ok. I will tell you: Lat is 39.95258 and Lon is -75.16522. (There also is a convenient `geocode()` function in the `ggmap` package. We will deal with that package in the next section.)  
-With this information, create a `SpatialPoints` object named `ph.ctr`.  
+Ok. I will tell you: Lat is 37.761518, and Lon is -122.425930. (There also is a convenient `geocode()` function in the `ggmap` package. We will deal with that package in the next section.)  
+With this information, create a `SpatialPoints` object named `birite`.  
 
 #. Create a buffer around the center.  
-Here is where we will use the `gBuffer()` function from the `rgeos` package. The function can take a number of arguments, but for this purpose we will only need two: the __sp object__ and the __width__ of the buffer, which is assumed to be in map units. The function returns a `SpatialPolygons` object to you with the buffer - name it `ph.buf`.  
+Here is where we will use the `gBuffer()` function from the `rgeos` package. The function can take a number of arguments, but for this purpose we will only need two: the __sp object__ and the __width__ of the buffer, which is assumed to be in map units. The function returns a `SpatialPolygons` object to you with the buffer - name it `birite.buf`.  
 So your command would look something like  
 ```
-ph.buf <- gBuffer(the_spatial_point_object, width = a_number_here)
+birite.buf <- gBuffer(the_spatial_point_object, width = a_number_here)
 ```  
-Now -- __before you create this buffer__, think about what you might need to do to `ph.ctr` before you proceed.
+Now -- __before you create this buffer__, think about what you might need to do to `birite` before you proceed.
 
 #. Select all polys that fall in the buffer.  
 We will use the `gIntersects()` function from the `rgeos` package for this. The function tests if two geometries (let's name them _spgeom1_ and _spgeom2_) have points in common or not. `gIntersects` returns TRUE if _spgeom1_ and _spgeom2_ have at least one point in common.  
 Here is where we determine if the census tracts fall within the buffer. In addition to our two sp objects (`ph.buf` and `philly`) we need to provide one mor argument, `byid`. It is a logical vector determining if the function should be applied across ids (TRUE) or the entire object (FALSE) for _spgeom1_ and _spgeom2_. The default setting is FALSE. Since we want to compare every single census tract polygon in our `philly` object we need to set it to TRUE.  
 So your command would be    
 ```
-ph.buf.intersects <- gIntersects (ph.buf, philly, byid=TRUE)
+sf.intersects <- gIntersects (birite.buf, sf, byid=TRUE)
 ```  
 Now we can use the values returned by this function to select the polygons. (Note that `gIntersects()` returns a matrix, and we need a vector for the subsetting, so we can simply use `as.vector()` to coerce the matrix into a vector.)  
-`philly.selection <- philly[as.vector(ph.buf.intersects),]`
+`sf.selection <- sf[as.vector(sf.intersects),]`
 
 #. Look at it:  
 ```
-plot (philly, border="#aaaaaa")
-plot (philly.selection, add=T, col="red") 
-plot (ph.buf, add=T, lwd = 2)
+plot (sf, border="#aaaaaa")
+plot (sf.selection, add=T, col="red") 
+plot (sf.buf, add=T, lwd = 2)
 ```
 
 ***
@@ -269,23 +271,23 @@ library(rgeos)
 
 ctr.coords <- data.frame(x = -75.16522, y = 39.95258) # set the coordinates
 prj <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs") # set the projection
-ph.ctr <- SpatialPoints(ctr.coords, proj4string = prj) # create the spatialPoints
+birite <- SpatialPoints(ctr.coords, proj4string = prj) # create the spatialPoints
 
-ph.ctr.aea <- spTransform(ph.ctr, philly@proj4string) # reproject!!
+birite <- spTransform(birite, sf@proj4string) # reproject!!
 
-ph.buf <- gBuffer(ph.ctr.aea, width=2000)  # create buffer around center
+birite.buf <- gBuffer(birite, width=6562)  # create buffer around center -- note this projection uses FEET as units, so 2 km is 6562 feet!
 
-ph.buf.intersects <-  gIntersects (ph.buf, philly, byid=TRUE) # determine which census tracts intersect with the buffer
+sf.intersects <-  gIntersects (birite.buf, sf, byid=TRUE) # determine which census tracts intersect with the buffer
 
-philly.selection <- philly[as.vector(ph.buf.intersects),]
+sf.selection <- philly[as.vector(sf.intersects),]
 
-plot (philly, border="#aaaaaa")
-plot (philly.selection, add=T, col="red") 
-plot (ph.buf, add=T, lwd = 2)
+plot (sf, border="#aaaaaa")
+plot (sf.selection, add=T, col="red") 
+plot (birite.buf, add=T, lwd = 2)
 
 ````
 
-![Philly Selection](images/phillySelection.png)
+![Philly Selection](images/birite.png)
 
 
 

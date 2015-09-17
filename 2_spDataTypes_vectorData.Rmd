@@ -286,7 +286,7 @@ Srs3 <-  Polygons(list(Sr3, Sr4), "s3/4")
 
 # create spatial polygons object from lists
 # A SpatialPolygons is like a shapefile or layer. 
-SpP <-  SpatialPolygons(list(Srs1,Srs2,Srs3), 1:3)
+SpP <-  SpatialPolygons(list(Srs1,Srs2,Srs3))
 plot(SpP)
 ```
 
