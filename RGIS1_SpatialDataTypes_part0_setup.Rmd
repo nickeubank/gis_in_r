@@ -1,0 +1,86 @@
+---
+title: "Spatial Data in R"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+```{r knitr_init, echo=FALSE, results='hide', cache=FALSE,message=FALSE}
+library(knitr)
+#library(rmdformats)
+
+## libraries needed for R code examples
+library(sp)
+library(raster)
+library(rgdal)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+
+```
+
+***
+
+Welcome to Spatial Data in R! This first set of tutorials (in three parts) is designed to provide an introduction to the two types of spatial data you will encounter in R: vector data and rasters. By the end of this tutorial, you should have a good sense of how R thinks about spatial data, and how to import and export spatial datasets you may get from other programs or sources.
+
+***
+
+## 1. Updating R and Getting RStudio
+
+* It's best the everyone works with the same version of R to avoid problems, so please start by updating your installation of R to 3.2.2 ("Fire Safety"). [Installers for R 3.2.2 can be found at here.](http://cran.cnr.berkeley.edu/)
+
+* Download the most recent version of [RStudio here](https://www.rstudio.com/products/rstudio/download/). RStudio has recently added some very nice features (like tab completion), so please update if you have an older version. 
+
+
+## 2. Library installation
+
+Next, we need to install some libraries. In this tutorial, we will work with three libraries: 
+
+* `sp`: vector data library
+* `rgdal`: for importing and exporting vector data from other programs, 
+* `raster`: for working with raster data
+
+
+__On Windows:__
+
+Just run: `install.packages(c("sp","raster","rgdal"))`
+
+__On Mac:__
+
+1. Download [GDAL complete](http://www.kyngchaos.com/files/software/frameworks/GDAL_Complete-1.11.dmg)
+
+2. Doubleclick and install the `.dmg` file as you are used to on a Mac
+
+3. Make sure you have R Version 3.2.2 installed -- if not update it.
+
+4. Download [rgdal](http://www.kyngchaos.com/files/software/frameworks/rgdal-0.9.1-1.dmg)  
+
+5. Doubleclick to open the `.dmg` file
+
+6. Move `rgdal_0.9-1.tgz` to your Desktop folder
+
+7. `install.packages("~/Desktop/rgdal_0.9-1.tgz", repos=NULL)`
+
+8. Install `raster` and `sp` by running: `install.packages(c("sp","raster"))`
+
+## 3. Checking your installation 
+
+If everything went well, the following three commands should run without problem!
+
+    library (sp)
+    library (rgdal)
+    library (raster)
+    

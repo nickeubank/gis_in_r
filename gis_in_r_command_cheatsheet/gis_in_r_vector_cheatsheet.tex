@@ -66,7 +66,8 @@
 \hspace*{1cm} \texttt{SpatialPolygons([list of Polygon\textbf{s} Objs])}\\
 \textbf{Spatial Polygons with DF}: \texttt{SpatialPolygonsDataFrame([SpatialPolygons Obj, DataFrame])}
 \begin{itemize}
-	\item Note: will merge DataFrame with polygons by matching DataFrame \texttt{rownames} to the names of \texttt{Polygons}.
+	\item During creation, will link rows to polygons by matching DataFrame \texttt{row.names} to names of \texttt{Polygons}.
+	\item After initial alignment based on names, relationship is based on order of rows. 
 \end{itemize}
 
 %%%%%%%%%%
@@ -86,12 +87,12 @@
 \textbf{Read Vector-Based Files:}\\
 \texttt{data <- readOGR(dsn=[path to FOLDER holding data], layer=[name of shapefile in folder])}
 \begin{itemize}
-	\item Note: do not include extension (like \texttt{.shp} in \texttt{layer} argument)
+	\item Note: do not include extension (like \texttt{.shp}) in \texttt{layer} argument
 \end{itemize}
 \textbf{Export Vector-Based Files:}\\
 \texttt{writeOGR([Spatial obj], dsn=[path to folder],layer=[name, no suffix], driver=[format])}
 \begin{itemize}
-	\item Shapefile: \texttt{driver="ESRI Shapefile"}. \href{http://www.gdal.org/ogr_formats.html}{\underline{Full format list}}
+	\item Shapefile: \texttt{driver="ESRI Shapefile"}.\\ \href{http://www.gdal.org/ogr_formats.html}{\underline{Full format list}}
 \end{itemize}
 %%%%%%%%%%
 % Interrogating
@@ -105,10 +106,11 @@
 \textbf{Full list of contents:} \texttt{attributes([Spatial obj])}\\
 \textbf{Check if projected:} \texttt{is.projected([Spatial obj])}\\
 
-\underline{\textbf{Extract Attributes:} }\\
-\textbf{Bounding Box:} \texttt{bbox([Spatial obj])}\\
-\textbf{Get full projection info:} \texttt{proj4string([Spatial obj])}\\
-\textbf{Get associated coordinates:} \texttt{coordinates([Spatial obj])}\\
+\underline{\textbf{Extract Attributes:}}\\
+\textbf{Bounding Box:} \texttt{bbox([Spatial obj])} \textbf{or} \texttt{[Spatial obj]@bbox}\\
+\textbf{Get full projection info:} \texttt{proj4string([Spatial obj])} \textbf{or} \texttt{[Spatial obj]@proj4string}\\
+\textbf{Get associated coordinates:} \texttt{coordinates([Spatial obj])} \textbf{or} \texttt{[Spatial obj]@coordinates}\\
+\textbf{Get associated data:} \texttt{[Spatial obj]@data}\\
 
 %%%%%%%%%%
 % Projections
@@ -124,22 +126,39 @@
 \href{http://www.spatialreference.org/}{\underline{\textbf{Projection code database}}} \\
 
 %%%%%%%%%%
-% Spatial Operations
+% Merging
 %%%%%%%%%%
 
 \hrulefill 
-\subsection*{Spatial Operations}
+\subsection*{Merging Data}
 
-\textbf{Spatial Joins:} \texttt{over([Spatial obj],[Spatial obj], fn=[NULL, or function if computing])}\\
-\textbf{Aggregate over points in polygon:} \\
-\texttt{aggregate([SpatialPoints column on which to compute], by=[SpatialPolygons], FUN=[function to execute for SpatialPoints column in each polygon])}\\
-\textbf{Buffer:} \texttt{gBuffer([SpatialPoints obj], width= [radius in projected units])}\\
-\textbf{Subset Intersecting Observations:}
+\textbf{Spatial* + Non-Spatial Table:} \\
+\texttt{mySpatial@data <- merge(mySpatial@data, table, by = "cols", all.x=TRUE)}\\
+\\
+\textbf{Spatial* + Spatial*:} \texttt{over([Spatial obj A],[Spatial obj B], fn=[NULL, or function if computing])}
+\begin{itemize}
+	\item \textbf\emph{{ENSURE PROJECTIONS MATCH FIRST!}}
+	\item If B does not have data.frame, returns index of item in B that intersect with A. 
+	\item If B has DataFrame, returns observation for items in B that intersect with A. 
+	\item If multiple things in B intersect, returns FIRST ONLY. Pass \texttt{fn} to aggregate, or \texttt{returnList=TRUE} to get all intersects. 
+	\item Can't join two SpatialPolygons layers. 
+\end{itemize}
+\textbf{SpatialPolygons + SpatialPolygons:} \texttt{gIntersects(SpatialObject1, SpatialObject2, byid=TRUE)}\\
+\textbf{Subset Intersecting Observations (like Polygons):}
 \begin{enumerate}
 	\item \texttt{select <- gIntersects(SpatialObject1,SpatialObject2,byid=TRUE)} 
 	\item \texttt{selected.SpatialObjects <- SpatialObject1[as.vector(select),]}
 \end{enumerate} 
-\textbf{Geometric Intersect:} \texttt{gIntersect(SpatialObject1,SpatialObject2,byid=TRUE)}
+\textbf{Spatial* + Raster:} \texttt{extract([raster obj], [SpatialPolygons object])}
+
+
+%%%%%%%%%%
+% Geometric Operations
+%%%%%%%%%%
+\hrulefill 
+\subsection*{Geometric Operations}
+\textbf{Geometric Intersect:} \texttt{gIntersect(SpatialObject1,SpatialObject2,byid=TRUE)}\\
+\textbf{Buffer:} \texttt{gBuffer([SpatialPoints obj], width= [radius in projected units])}\\
 
 
 %%%%%%%%%%

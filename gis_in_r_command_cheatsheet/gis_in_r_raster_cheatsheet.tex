@@ -35,23 +35,21 @@
 % Installing
 %%%%%%%%%%
 	
-\centerline{\textbf{Installation of Relevant Packages}}
-\textbf{Packages:}
+\hrulefill 
+\subsection*{Libraries}
 \begin{itemize}
 	\item \texttt{raster}: tools for raster datasets
 \end{itemize}
-
-\section*{Building and Managing Raster Objects}
 
 %%%%%%%%%%
 % Creating from Scratch
 %%%%%%%%%%
 
-\centerline{\textbf{Creating Rasters From Scratch}} 
-
-\underline{\textbf{RasterLayer (the skeleton):}}\\
+\hrulefill 
+\subsection*{Creating Rasters from Scratch}
+\textbf{RasterLayer (the skeleton):}\\
 \hspace*{0.3cm}\texttt{newRL <- raster(ncol=10, nrow=20, xmn=0, xmx=10,ymn=-10,ymx=10)}\\
-\underline{\textbf{RasterLayer w/ Data (skeleton + data):}}\\
+\textbf{RasterLayer w/ Data (skeleton + data):}\\
 \hspace*{0.3cm}\texttt{values(newRL) <- [vector]}
 \begin{itemize}
 	\item Length of vector should match total number of cells in Raster Layer obj
@@ -63,8 +61,8 @@
 % Load from Files 
 %%%%%%%%%%
 
-\hrulefill \\ 
-\centerline{\textbf{Loading Spatial Objects from Files}} \\
+\hrulefill
+\subsection*{Loading Spatial Objects from Files}
 \texttt{dem <- raster("file name.fileextension")}
 \begin{itemize}
 	\item Pass the entire filename  -- path, filename, and extension -- unlike in \texttt{readOGR()}.
@@ -74,11 +72,10 @@
 % Interrogating
 %%%%%%%%%%
 
-\hrulefill \\ 
-\centerline{\textbf{Interrogating Raster and Setting Values}} \\
+\hrulefill
+\subsection*{Interrogating Raster and Setting Values}
 \textbf{Quick summary:} just type name of raster object \\
 \textbf{Check if has values:} \texttt{hasValues(Raster obj)}\\
-
 \textbf{Viewing or Setting Values:} In general, \texttt{raster} commands will return a value if just typed, and will set a value if an assignment is made. So \texttt{nrow(Raster obj)} gets number of rows, \texttt{nrow(Raster obj)<-5} sets number of rows to 5. Among these:
 \begin{itemize}
 	\item \textbf{Number of rows, columns, resolution:} \texttt{nrow(Raster obj)},\texttt{ncol(Raster obj)},\texttt{res(Raster obj)}
@@ -89,14 +86,18 @@
 % Projections
 %%%%%%%%%%
 
-\hrulefill \\ 
-\centerline{\textbf{Managing Projections}} \\
+\hrulefill 
+\subsection*{Managing Projections} 
 \emph{Note: similar to vector data, but without the intermediate CRS() step -- just pass the proj4 string.}\\
 \textbf{Assigning projection by EPSG code:} \texttt{projection([Raster obj]) <-"+init=EPSG:4326"}\\
 \textbf{Get projection from Spatial obj:} \texttt{projection([Raster obj])} \\
 \textbf{Re-project:} \\
-\hspace*{0.3cm}\texttt{reprojectedRaster <- projectRaster([raster obj],crs=[proj4 string for new projection])}\\
-\href{http://www.spatialreference.org/}{\underline{\textbf{Projection code database}}} \\
+\hspace*{0.3cm}\texttt{reprojectedRaster <- projectRaster([raster obj],crs=[proj4 string for new projection])}
+\begin{itemize}
+	\item \emph{BUT: remember re-projecting rasters is computationally difficulty and can reduce precision, so if you can re-project your Spatial\* objects instead!}
+\end{itemize}
+\vspace{0.1cm}
+\href{http://www.spatialreference.org/}{\underline{\textbf{Projection code database}}}
 
 
 

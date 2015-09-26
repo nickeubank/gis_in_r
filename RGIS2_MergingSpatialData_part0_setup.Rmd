@@ -1,0 +1,66 @@
+---
+title: "Merging Spatial Data"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+
+```{r knitr_init, echo=FALSE, cache=FALSE, message=FALSE}
+library(knitr)
+library(rmdformats)
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+
+library(rgdal)
+library(sp)
+library(rgeos)
+library(dplyr)
+
+```
+
+***
+
+When working with spatial data, one is rarely interested in working with only one source of data. This tutorial will introduce a set of tools for linking vector data with other data sources. It begins by introducing how to link spatial vector data with non-spatial data from in table format, then turns to the problem of linking multiple sources of spatial data through spatial joins and intersects. 
+
+This tutorial uses the `sp`, `rgdal`, and `raster` libraries from the `RGIS1` tutorial. If you have not yet installed those, please revisit that tutorial for directions. In addition, this tutorial will also make use of the `rgeos` library, installation of which is discussed in `part0_setup`. 
+
+***
+
+Most geometric operations -- like creating buffers, creating geometric intersections, unions of polygons, etc. -- are executed using the `rgeos` library. Whenever you're thinking about a geometric operation, `rgeos` is the first place to look. 
+
+## 1. Installation Instructions
+
+**On Windows**
+
+* 1. `install.packages(c("rgeos", "plyr"))` is usually all you need!
+
+**On Macs**
+
+Installation of the `rgeos` library on Macs can be a little tricky -- as of September 2015, `install.packages("rgeos")` will not work on macs (though hopefully this will change soon?). In the meantime, most people find the following directions works: 
+
+* 1. Make sure you have downloaded and installed the [GDAL Complete}(http://www.kyngchaos.com/files/software/frameworks/GDAL_Complete-1.11.dmg) library from `RGIS1`.
+* 2. Run the following command:
+```{r, eval=FALSE}
+install.packages("rgeos", type = "source", configure.args ="--with-geos-config=/Library/Frameworks/GEOS.framework/Versions/Current/unix/bin/geos-config")
+```
+* 3. Test the installation by typing `library(rgeos)`. If it works, you're done!
+* 4. If the library fails to load, try the directions on [this site](http://dyerlab.bio.vcu.edu/2015/03/31/install-rgeos-on-osx/)
+* 5. Install `plyr` by `install.packages("plyr")`
+
+## 2. Test Installation
+
+To test your installation, just type `library(rgeos)`. If it loads, you're set!
