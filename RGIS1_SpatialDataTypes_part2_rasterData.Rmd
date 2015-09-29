@@ -88,28 +88,22 @@ projection(basic_raster) <- "+init=EPSG:4326"
 
 The `raster` library can also read many file types on it's own. For example, let's load SF Elevation data. 
 
-```{R, eval=FALSE}
+```{R, eval=TRUE}
 raster_from_file <- raster("RGIS1_Data/sanfrancisconorth.dem")
 plot(raster_from_file)
 ```
 
 ## 3. Modifying & Interrogating `raster` objects
 
-`raster` comes with a number of tools for modifying a raster object: 
+`raster` has a number of functions that can be either used to look at a feature, or to change a feature depending on whether you try to set a value. For example:
 
+* Check the resolution: `res(basic_raster)`
 * Change resolution: `res(basic_raster) <- c(x value,y value)`
+
+* Check number of columns: `ncol(basic_raster)`
 * Change number of columns: `ncol(basic_raster) <- value`
-* Change number of rows: `nrow(basic_raster) <- value`
 
 However, **be careful with these commands** -- if you change the number of columns or rows, that will necessarily change the resolution and vice versa! Moreover, **if you change the dimensions, any values associated with the data will be erased.** 
-
-Simiarly, you can call most attributes of a raster using analogous commands:
-
-* Resolution: `res(basic_raster)`
-* Dimensions: `dim(basic_raster)`
-* Max X extent: `xmax(basic_raster)`
-* Values: `values(basic_raster)`
-* etc. 
 
 ***
 #### Exercise 3

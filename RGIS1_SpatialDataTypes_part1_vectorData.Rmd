@@ -72,56 +72,35 @@ Points are the most basic geometric shape, so we begin by building a `SpatialPoi
 A points is defined by a pair of x-y coordiantes, so we can create a set of points by (a) creating  matrix of x-y points, and (b) passing them to the `SpatialPoints` function to create our first `SpatialPoints` object:
 
 ```{r}
-toy.coordinates <- cbind(
-                    c(1.5,2.5,0.5,1,1.5,2,2.5,3,3.5), 
-                    c(2,2,0.5,0.25,0,0,0,0.25,0.5)) # a matrix with some "arbitrary"" points
+library(sp)
+toy.coordinates <- rbind(c(1.5, 2.00),
+                          c(2.5, 2.00),
+                          c(0.5, 0.50),
+                          c(1.0, 0.25),
+                          c(1.5, 0.00),
+                          c(2.0, 0.00),
+                          c(2.5, 0.00),
+                          c(3.0, 0.25),
+                          c(3.5, 0.50))
+
 toy.coordinates
-xy.sp <- SpatialPoints(toy.coordinates) # ..converted into a spatial object
-plot(xy.sp, pch = 2)
+my.first.points <- SpatialPoints(toy.coordinates) # ..converted into a spatial object
+plot(my.first.points)
 ```
 
 To get a summary of how R sees these points, we can ask it for summary information in a couple different ways. Here's a summary of available commands:
 
-method/class | and what it does
------------- | ----------------
-`coordinates(x)` | returns a matrix with the spatial coordinates. For spatial polygons it returns the centroids.
-`bbox(x)` | returns the bounding box (most extreme x and y coordinates)
-`summary(x)` | an overview of the object, designed for human consumption
-`str(x)` | an overview of the object as R sees it
-`proj4string(x)` | sets or retrieves projection attributes using the CRS object.
-`plot(x)` | plots a spatial object
-`spplot(x)` | plots all the attributes unless specified otherwise
-
-
-Let's try a few:
-
 ```{r}
-coordinates(xy.sp)
-bbox(xy.sp)
-summary(xy.sp)
+summary(my.first.points)
+coordinates(my.first.points)
 ```
-
-**`xy.sp` as an Object**
-
-While `summary` gives you a human-readable sense of an object, `str` gives you a sense of how R sees an object, so let's take a look. If this seems to alien to you, don't worry, it's not crucial to understand:
-
-```{r}
-str(xy.sp)
-```
-
-What this shows is that `xy.sp` is actually a collection of different things, referred to in R as "slots": `coords`, `bbox`, and `proj4string`. (If you are used to working in another object-oriented language like Java or Python, these are analogous to attributes.) You can access each of these "slots" using the `@` operator:
-
-```{r}
-xy.sp@coords
-```
-
 
 #### Add a Coordinate Reference System (CRS)
 
 Unlike a simple geometric object, a `SpatialPoints` object has the ability to keep track of how the coordinates of its points relate to places in the real world through an associated "Coordinate Reference System" (CRS -- the combination of a geographic coordinate system and a projection), which is stored using a code called a `proj4string`. The proj4string is so important to a `SpatialPoints` object, that it's presented right in the summary:
 
 ```{r}
-summary(xy.sp)
+summary(my.first.points)
 ```
 
 In this case, however, while our `SpatialPoints` object clearly knows what a CRS *is*, the Spatial object we just created __does not__ have a projection or geographic coordinate system defined. It is ok to plot, but be aware that for any meaningful spatial operation you will need to define a CRS. 
@@ -133,12 +112,13 @@ Note that the same CRS can often be called in many ways. For example, one of the
 Here's an illustration of assigning a CRS:
 
 ```{r}
-is.projected(xy.sp) # see if a projection is defined. 
+is.projected(my.first.points) # see if a projection is defined. 
   # Returns `NA` if no geographic coordinate system or projection; returns FALSE if has geographic coordinate system but no projection.
 
 crs.geo <- CRS("+init=EPSG:32633")  # UTM 33N
-proj4string(xy.sp) <- crs.geo  # define projection system of our data
-is.projected(xy.sp)
+proj4string(my.first.points) <- crs.geo  # define projection system of our data
+is.projected(my.first.points)
+summary(my.first.points)
 ```
 
 We'll talk more about managing projections in the next lesson. 
@@ -149,19 +129,19 @@ We'll talk more about managing projections in the next lesson.
 Moving from a `SpatialPoints` to a `SpatialPointsDataFrame` occurs when you add a DataFrame of attributes to the points. Let's just add an arbitrary table to the data -- this will label each point with a letter and a number. **Note points will merge with the DataFrame based on the order of observations.** 
 
 ```{r}
-df <- data.frame(attr1 = LETTERS[1:9], attr2 = c(9:1))
+df <- data.frame(attr1 = c('a','b','z','d','e','q','w','r','z'), attr2 = c(101:109))
 df
 ```
 
 ```{r}
-xy.spdf <- SpatialPointsDataFrame(xy.sp, df)
-summary(xy.spdf)
+my.first.spdf <- SpatialPointsDataFrame(my.first.points, df)
+summary(my.first.spdf)
 ```
 
 Now that we have attributes, we can also subset our data the same way we would subset a DataFrame. Some subsetting:
 ```{r}
-xy.spdf[1:2, ]        # row 1 and 2 only
-plot(xy.spdf[which(xy.spdf$attr2>5),])    # select if attr2 > 5
+my.first.spdf[1:2, ]        # row 1 and 2 only
+plot(my.first.spdf[which(my.first.spdf$attr2>105),])    # select if attr2 > 5
 ```
 
 ***
@@ -175,9 +155,10 @@ A `SpatialPointsDataFrame` object can be created directly from a DataFrame by sp
 
 1. If you haven't already, create a new directory `R_Workshop` on your Desktop. 
 2. Download and place the `RGIS1_Data` folder from coursework in this directory.
-4. Use `read.csv()` to read `sf_restaurant_inspections.csv` into a dataframe in R and name it `sf.df`.
-5. Use `head()` to examine the first few lines of the dataframe.
-6. Use `class()` to examine which object class the table belongs to.
+3. `read.csv()` to read `sf_restaurant_inspections.csv` into a dataframe in R and name it `sf.df`.
+4. Use `head()` to examine the first few lines of the dataframe.
+5. Use `class()` to examine which object class the table belongs to.
+6. Load the `sp` library (`library(sp)`)
 7. Convert the table into a spatial object using the `coordinates` command and passing the names of the columns in the table that correspond to longitude and latitude:
 
     `coordinates(sf.df) <- c("longitude", "latitude")`
@@ -187,7 +168,7 @@ A `SpatialPointsDataFrame` object can be created directly from a DataFrame by sp
 8. Use `class()`again to examine which object class the table belongs to now:  
 What to you observe?
 
-9. Plot restaurants with terrible scores by subsetting on `Score`. 
+9. Plot restaurants with terrible scores by subsetting on `Score` and using the `plot` command. 
 
 
 ***
@@ -204,7 +185,7 @@ To get a `SpatialPolygons` object, we have to build it up by (a) creating `Polyg
 
 * A `Polygon` object is a single geometric shape (e.g. a square, rectangle, etc.) defined by a single uninterrupted line around the exterior of the shape. 
 * A `Polygons` object consists of one *or more* simple geometric objects (`Polygon` objects) that combine to form what you think of as a single unit of analysis (an "observation"). For example, each island in Hawaii would be a `Polygon`, but Hawaii itself is the `Polygons` consisting of all the individual island `Polygon` objects. 
-* A `SpatialPolygons` object is a collectino of `Polygons` objects, where each `Polygons` object is an "observation". For example, if we wanted a map of US states, we would make a `Polygons` object for each state, then combine them all into a single `SpatialPolygons`. If you're familiar with shapefiles, `SpatialPolygons` is basically the R analogue of a `shapefile` or `layer`. 
+* A `SpatialPolygons` object is a collection of `Polygons` objects, where each `Polygons` object is an "observation". For example, if we wanted a map of US states, we would make a `Polygons` object for each state, then combine them all into a single `SpatialPolygons`. If you're familiar with shapefiles, `SpatialPolygons` is basically the R analogue of a `shapefile` or `layer`. 
 
 **One special note:** if you want to put a hole in a polygon (e.g. drawing a donut, or if you wanted to draw South Africa and leave a hole in the middle for Lesotho) you do so by (a) creating a `Polygon` object for the outline, (b) creating a second `Polygon` object for the hole and passing the argument `hole=True`, and (c) combine the two into a `Polygons` object. 
 
@@ -213,16 +194,34 @@ Let's try building up a `SpatialPolygon`!
 ```{r}
 # create polyon objects from coordinates. 
 # Each object is a single geometric polygon defined by a bounding line. 
-house1 <-  Polygon(cbind(c(1,2,2,1),c(1,1,0,0)))
-house1.roof <- Polygon(cbind(c(1,1.5,2),c(1,2,1)))
-house2 <-  Polygon(cbind(c(3,4,4,3),c(1,1,0,0)))
-house2.roof <- Polygon(cbind(c(3,3.5,4), c(1,2,1)))
-house2.door <-  Polygon(cbind(c(3.25,3.75,3.75,3.25),c(0.75,0.75,0,0)), hole=TRUE)
+house1.building <-  Polygon(rbind(c(1, 1),
+                                  c(2, 1),
+                                  c(2, 0),
+                                  c(1, 0)))
+
+house1.roof <- Polygon(rbind(c(1.0, 1),
+                             c(1.5, 2),
+                             c(2.0, 1)))
+
+house2.building <-  Polygon(rbind(c(3, 1),
+                              	  c(4, 1),
+	                                c(4, 0),
+	                                c(3, 0)))
+
+house2.roof <- Polygon(rbind(c(3.0, 1),
+                             c(3.5, 2),
+                             c(4.0, 1)))
+
+house2.door <-  Polygon(rbind(c(3.25,0.75),
+                              c(3.75,0.75),
+                              c(3.75,0.00),
+                              c(3.25,0.00)), 
+                              hole=TRUE)
 
 # create lists of polygon objects from polygon objects and unique ID
 # A `Polygons` is like a single observation. 
-h1 <-  Polygons(list(house1, house1.roof), "house1")
-h2 <-  Polygons(list(house2, house2.roof, house2.door), "house2")
+h1 <-  Polygons(list(house1.building, house1.roof), "house1")
+h2 <-  Polygons(list(house2.building, house2.roof, house2.door), "house2")
 
 # create spatial polygons object from lists
 # A SpatialPolygons is like a shapefile or layer. 
@@ -238,26 +237,21 @@ As with SpatialPoints, we can associated a DataFrame with SpatialPolygons. There
 
 Make attributes and plot. Note how the door -- which we created with `hole=TRUE` is empty!
 ```{r}
-attr <- data.frame(attr1=1:2, attr2=6:5, row.names=c("house1", "house2"))
+attr <- data.frame(attr1=1:2, attr2=6:5, row.names=c("house2", "house1"))
 ```
 
 ```{r}
 houses.DF <- SpatialPolygonsDataFrame(houses, attr)
+houses.DF@data      # Notice the rows were re-ordered!
 spplot(houses.DF)
-```
-
-To look at the attribute table, we can call the data slot:
-```{r}
-houses.DF@data
 ```
 
 #### Adding a Coordinate Reference Systems (CRS)
 As with `SpatialPoints`, a `SpatialPolygons` doesn't actually know where it is in space until you give it a Coordinate Reference System, which you can do the same way you did with the `SpatialPoints` objects. 
 
 ```{r eval=FALSE}
-is.projected(SpP) # see if a projection is defined  
 crs.geo <- CRS("+init=EPSG:4326")  # geographical, datum WGS84
-proj4string(SpP) <- crs.geo  # define projection system of our data
+proj4string(houses.DF) <- crs.geo  # define projection system of our data
 ```
 
 ***
@@ -265,13 +259,17 @@ proj4string(SpP) <- crs.geo  # define projection system of our data
 **Exercise 1.2**
 *Answer code at end of exercise -- but don't cheat!*
 
-1. Make a (highly stylized) SpatialPolygon object for South African and Lesotho based on the following points:
+1. Make a (highly stylized) SpatialPolygon object for Lesotho and South Africa based on the following points:
 
 ![South Africa](images/safrica.png)
 
 2. Add an attribute Table with each country's GDP Per Capita (approximately $7,000 for South Africa and $1,000 for Lesotho).
 
 3. Plot your SpatialPolygons using `spplot()`
+
+The result should look something like this:
+
+![South Africa 2](images/sa_plot_example.png)
 
 ***
 
@@ -303,14 +301,17 @@ When reading in a shapefile, `readOGR()` expects at least the following two argu
     layer name (layer)     # the file name without extension
                            # Note that this is not a path but just the name of the file
 
-For example, if I have a shapefile called `Philadelphia.shp` and all its associated files (like _.dbf, .prj, .shx_) in a directory called `PH` on my desktop, and I have my working directory set to my desktop folder, my command to read this shapefile would look like this:
+For example, if I have a shapefile called `sf_incomes.shp` and all its associated files (like _.dbf, .prj, .shx_) in a directory called `PH` on my desktop, and I have my working directory set to my desktop folder, my command to read this shapefile would look like this:
 ```
-readOGR(dsn = "sf", layer = "sf_incomes")
+readOGR(dsn = "shapefiles", layer = "sf_incomes")
 ```
 or in short:
 ```
-readOGR("sf", "sf_incomes")
+readOGR("shapefiles", "sf_incomes")
 ```
+
+**Note you may run into trouble if you set your working directory to the folder holding the shapefile as 'readOGR()' doesn't like it if the first argument is an empty string.**
+
 
 ***
 ### Exercise 2
@@ -325,6 +326,31 @@ readOGR("sf", "sf_incomes")
 8. Plot some attribute data: `spplot(sf, "MdIncHH")`
 
 ***
+
+# 3. OPTIONAL: Understanding Spatial* Objects
+
+Remember when we got the data of a Spatial* object using the `@` operator? What was that?
+
+Turns out Spatial* objects are just a collection of things that you can see using the `str` command:
+
+```{r}
+str(my.first.spdf)
+```
+
+What this shows is that `my.first.spdf` is actually a collection of different things -- `data`, `coords`, `bbox`, and a `proj4string`. In the same way we can get many of these things with commands, we can also call them with the `@` command!
+
+```{r}
+bbox(my.first.spdf)
+my.first.spdf@bbox
+```
+
+```{r}
+coordinates(my.first.spdf)
+my.first.spdf@coords
+```
+
+In R, the items with `@` at the start of the line are called "slots". If you are used to working in another object-oriented language like Java or Python, these are analogous to attributes. You can access each of these "slots" using the `@` operator, making them equivalent of some function calls. 
+
 
 **Answers to Exercise 1.2**
 
@@ -359,5 +385,8 @@ proj4string(mapDF) <- CRS('+init=EPSG:4326')
 
 # Plot
 spplot(mapDF)
+```
+
+
 
     
