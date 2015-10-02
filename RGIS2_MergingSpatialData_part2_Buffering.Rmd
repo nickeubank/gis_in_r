@@ -1,5 +1,6 @@
 ---
 title: "Merging Spatial Data"
+author: "Nick Eubank, building off excellent tutorials by Claudia Engel"
 output:
   html_document:
     toc: true
@@ -31,10 +32,10 @@ library(rgeos)
 library(plyr)
 library(raster)
 
-sf<-readOGR("RGIS2_Data",'sf_incomes')
-sf.ft<-readOGR("RGIS2_Data",'sf_foodtrucks')
-newcrs<-CRS(proj4string(sf))
-sf.ft.newproj <- spTransform(sf.ft, newcrs)
+census.tracts<-readOGR("RGIS2_Data",'sf_incomes')
+food.trucks<-readOGR("RGIS2_Data",'sf_foodtrucks')
+newcrs<-CRS(proj4string(census.tracts))
+food.trucks.newproj <- spTransform(food.trucks, newcrs)
 
 ```
 
@@ -60,20 +61,23 @@ where:
 * _"id-number"_ is the colum that contains the unique identifier in _worldCountries_, and 
 * _"countryID"_ is the column that contains the unique identifier in _countryData_. 
 
-Then we can just merge worldCountries@data with countryData on those variables, with one small nuance: **DO NOT MERGE YOUR DATA USING THE `merge` COMMAND!** 
+Then we can just merge worldCountries@data with countryData on those variables, with one small nuance: 
 
-The `merge` command that comes with R does not preserve the order of rows. Because R keeps track of which rows in the attribute table are associated with which `Spatial*` observations based on the order of observations, using the `merge` command can shuffle which information is associated with which Point/Line/Polygon.
+**DO NOT MERGE YOUR DATA USING THE `merge` COMMAND!** 
 
-Instead, use `join` from the `plyr` library. `join` guarantees that "Unlike merge, [`join`] preserves the order of x no matter what join type is used. If needed, rows from y will be added to the bottom. Join is often faster than merge, although it is somewhat less featureful - it currently offers no way to rename output or merge on different variables in the x and y data frames."
+R keeps track of the relationship between rows in the attribute table an `Spatial*` shapes based on the order of observations in the attribute table. Unfortunately, the `merge` command can shuffle the order of rows in the attribute table, potentially jumbling the association of rows with Point/Line/Polygons.
 
-Since we always want to keep all the rows from our `Spatial*` data, we will use the following options:
+To avoid this problem, always use two rules when merging:
+* Use `join` from the `plyr` library with the `type="left"` argument
+* Also place the DataFrame associated with your `Spatial*` object in the first position. 
 
+In this case, that means our merge would look like the following:
 ```{r eval=FALSE, tidy=FALSE}
 library(plyr)
 worldCountries@data <- join(worldCountries@data, countryData, by = c("id-number" = "countryID"), type = "left")
 ```
 
-(`type="left"` is the same as using the `all.x=TRUE` option for `merge`.)
+(FYI: `type="left"` is the same as using the `all.x=TRUE`  and `all.y=FALSE` options for `merge` -- it keeps all rows of the DataFrame in the first position and only matching rows of the second.)
 
 That's it!
 
@@ -111,11 +115,12 @@ Most of the time, you answer these questions using some form of Spatial Join. Un
 ## 2.1 Managing Coordinate Reference Systems (CRS)
 To combine two Spatial* datasets, the first thing you have to do is make sure they have the same CRS. If you try and work with two Spatial* objects in R that are not in the same CRS, you *will* get results, but those results will be nonsense! **Note that this is very different from programs like ArcGIS that will take care of this problem for you!** So before we can join Spatial* objects, we need to learn to re-project different data sources into a common CRS. 
 
-In `RGIS1`, we reviewed how to define a projection for a dataset. **Defining** a projection is when the user tells the computer how it should *interpret* the x-y coordinates associated with a `Spatial*` object. For example, if data comes from a GPS device, one must tell the computer those x-y coordinates are latitudes and longitudes.
+Make sure you remember the differences between *defining* a CRS and re-projecting:
 
-Now we will discuss how to *re*-project Spatial Data. **Reprojecting** is when you tell the computer to *convert* a spatial object -- whose projection has already been defined! -- from its current projection into a new projection. 
+* **Defining a projection** is when the user tells the computer how it should *interpret* the x-y coordinates associated with a `Spatial*` object. For example, if data comes from a GPS device, one must tell the computer those x-y coordinates are latitudes and longitudes. It does not change the values of the numbers, just how the computer interprets them. 
+* **Re-projecting** is when you tell the computer to *convert* coordinates from one representation (like latitude and longitude) to another (like meters from some fixed reference point). It changes not just the `proj4string` associated with an object, but also all the actual x-y coordinates.  
 
-Reprojecting vector data requires two tools, both in the `sp` package:
+Re-projecting vector data requires two tools, both in the `sp` package:
 
 * a Coordinate Reference System `CRS` object with the new CRS you wish to apply
 * the `spTransform()` function
@@ -159,74 +164,96 @@ file.b.reprojected <- spTransform(file.b, common.crs)
 
 #. If you haven't already, create a directory `R_Workshop` on your Desktop and unzip `RGIS2_Data` into that folder. 
 
-#. Load the `rgdal`, `sp`, and `dplyr` packages.
+#. Load the `rgdal`, `sp`, and `plyr` packages.
 
-#. Read in the `sf_incomes` shapefile into R and name it `sf`. 
+#. Read in the `sf_incomes` shapefile into R and name it `census.tracts`. 
 
-#. Read the `sf_foodtrucks` shapefile into R and name it `sf.ft`.
+#. Read the `sf_foodtrucks` shapefile into R and name it `food.trucks`.
 
-#. What is the CRS of `sf`?   What is the CRS of `sf.ft`?
+#. What is the CRS of `census.tracts`?   What is the CRS of `food.trucks`?
 
-#. Reproject `sf.ft` so it matches the projection of `sf` and assign it to a new object called `sf.ft.newproj`.
+#. Reproject `food.trucks` so it matches the projection of `census.tracts` and assign it to a new object called `food.trucks.newproj`.
 
-#. You can use the `range()` command from the R base package to compare the coordinates before and after repojection and confirm that you actually have transformed them. `range()` simply returns the _min_ and _max_ value of a vector of numbers that you give it. So you can check with:  
-`range(coordinates(sf.ft))`  
+#. You can use the `range()` command from the R base package to compare the coordinates before and after reprojection and confirm that you actually have transformed them. `range()` simply returns the _min_ and _max_ value of a vector of numbers that you give it. So you can check with:  
+`range(coordinates(food.trucks))`  
 and  
-`range(coordinates(sf.ft.newproj))`  
+`range(coordinates(food.trucks.newproj))`  
 
 #. You can also compare them visually with:  
 ```{r}
 par(mfrow=c(1,2)) 
-plot(sf.ft, axes=TRUE)
-plot(sf.ft.newproj, axes=TRUE)
+plot(food.trucks, axes=TRUE)
+plot(food.trucks.newproj, axes=TRUE)
 ```
 
 
 ## 2.2. Simple Spatial Joins Using The `over` Command
 
 
-They primary tool for doing spatial joins is the `over` command from the `sp` library. The exact behavior of `over` depends on the inputs being used, but the basic sytax is "For each item of first argument, give me information about the intersecting item of second argument".
+They primary tool for doing spatial joins is the `over` command from the `sp` library. 
 
-For example, if I wanted to get information on the census tract of every food truck:
+The exact behavior of `over` depends on the inputs being used, but the basic idea is: "For each item of first position (the SOURCE), `over` returns information about items of second argument (TARGET) that intersect".
+
+For example, if for every food truck (SOURCE) I wanted to get information about their census tract (TARGET), I could run:
 
 ```{r}
-truck.home.tract <- over(sf.ft.newproj,sf)
+truck.home.tract <- over(food.trucks.newproj,census.tracts)
 head(truck.home.tract)
 ```
 
-Note that because `sf` is a `SpatialPolygonDataFrame`, `over` returned the relevant row of data for each point. If sf did not have any data, we would just get the index of the home polygon for each truck. We can see this behavior if we use the `geometry()` function to strip away the DataFrame:
+Note that because `census.tract` is a `SpatialPolygonDataFrame`, `over` returned the relevant row of data for each point. If `census.tract` did not have any data, we would just get the index of the intersecting polygon for each truck. We can see this behavior if we use the `geometry()` function to strip away the DataFrame:
 
 
 ```{r}
-truck.home.tract.index <- over(sf.ft.newproj,geometry(sf))
+truck.home.tract.index <- over(food.trucks.newproj,geometry(census.tracts))
 head(truck.home.tract.index)
 ```
 
+A few caveats:
+* By default, `over` will return the *first* item in the TARGET that intersects with an item in SOURCE if there are multiple items. 
+* `over` cannot handle intersection two `SpatialPolygons`
 
-**Note that the one type of spatial join that `over` can't handle is between two `SpatialPolygon` objects.** To join two `SpatialPolygon` objects, we use the `gIntersect` tool from the `rgeos` library discussed below!
 
-### Aggregating intersected items
+### Multiple Intersections
 
-One situation to be aware of is when each item in the first argument potentially intersects more than one item in the second argument. For example, if we asked "what food trucks are in each census tract?", there would obviously be many food trucks per tract. 
 
-By default, when multiple items intersect an item in the first argument, `over` will just return the first one. However, if the second item has a DataFrame associated with it, it is possible to ask `over` to aggregate the multiple items. 
+By default, when there are multiple TARGET observations that intersect a SOURCE observation, `over` will just return the first one. There are two ways to address this. 
 
-For example, if we add a column of 1s to our food truck data, then ask `over` to sum up that column, we get back the number of food trucks in each census tract. 
+#### Option 1: `returnList`
+
+`over` normally returns a vector, which can only have one item per row. However, if you pass the argument `returnList=TRUE`, `over` will return a named list, where:
+* The name for each list entry is the index of the SOURCE observation
+* The contents are the indices of all items in the TARGET that intersect the SOURCE observation 
+
+Once you have this list, you can compute on it with tools like `sapply`. 
+
+Here's an example with just indices of intersecting TARGET observations:
+```{r}
+over(census.tracts,geometry(food.trucks.newproj),returnList=TRUE)[18:22]
+```
+
+Here's an example where one gets back the relevant DataFrame rows of intersecting TARGET observations. 
+```{r}
+over(census.tracts,food.trucks.newproj,returnList=TRUE)[18:19]
+```
+
+
+#### Option 2: `fn`
+
+However, if the second argument has a DataFrame associated with it, it is possible to ask `over` to aggregate the variables associated with intersecting TARGET observations. 
+
+For example, we can use this to count the number of food trucks in each census tract by: 
+* adding a column of 1s to our food truck data called `counter` 
+* ask `over` to `sum` the `counter` column for observations that intersect each SOURCE observation. 
 
 ```{r}
-sf.ft.newproj@data$counter<-1
-num.food.trucks <- over(sf,sf.ft.newproj[,'counter'], fn=sum)
-num.food.trucks$counter[is.na(num.food.trucks$counter)] <- 0  # fill in zeros.
+food.trucks.newproj@data$counter<-1
+num.food.trucks <- over(census.tracts,food.trucks.newproj[,'counter'], fn=sum)
 head(num.food.trucks,12)
 ```
 
 If we had other information on food trucks -- like their value -- we could also ask for things like their mean value by passing the `mean` function. 
 
-The other option is to ask `over` to return all matching items by passing the argument `returnList=TRUE`. Instead of getting back a vector, you will get back a list, where each entry has all matching items for an input item. For example, here we can see that the 19th Census tract contains the food trucks with indexes 86, 89, 130, 295, etc.:
-
-```{r}
-over(sf,geometry(sf.ft.newproj),returnList=TRUE)[18:22]
-```
 
 ## 2.3. Fancy Joins and Geometric Operations with `rgeos`
 
@@ -285,38 +312,6 @@ plot (sf.selection, add=T, col="red")
 plot (sf.buf, add=T, lwd = 2)
 ```
 
-***
-
-
-# 3. Combining Rasters and SpatialPolygons
-
-Finally, sometimes we have a SpatialPolygons, and want to know something about the properties within the polygons based on information in a raster dataset. For example, we might have the polygons of electoral districts in Africa, and want to know the average level of light as seen by satellites.
-
-In these situations, we use the `extract` tool, which returns the values of all the raster cells that fall within each polygon. (More specifically, it returns a list of numeric vectors, where the vector in position N corresponds to the raster cell values inside polygon N.) You can then compute on these values as you wish!
-
-## 3.1 Reprojecting Raster data
-As with `Spatial*` objects, the first step is to make sure everything has a common projection. 
-
-Raster objects can be reprojected using the `projectRaster` function. However, be aware that reprojecting rasters is not quite as costless as reprojecting vector data. Rasters must also have a regular grid pattern, and since different projections will not necessarily preserve that feature, reprojecting rasters means creating a new grid and computing each value based on overlapping cells from the old grid. Thus it is computationally difficult and can lead to losses of precision. Thus you are probably better off reprojecting your `SpatialPolygon` object rather than your raster. 
-
-## 3.2 The Extract Tool
-
-```{r}
-sf.elevation <- raster("RGIS2_Data/sanfrancisconorth.dem")
-raster.crs <- CRS(projection(sf.elevation))
-sf.reprojected <- spTransform(sf, raster.crs) 
-extracted.values <- extract(sf.elevation,sf.reprojected)
-
-# A few example outputs -- 
-# low index polygons are in south SF and don't actually have values, so jumping to top. 
-extracted.values[174:176]
-```
-
-You can get average values using the `sapply()` function:
-```{r}
-# A subsets of outputs
-sapply(extracted.values, mean)[100:130]
-```
 
 
 ***

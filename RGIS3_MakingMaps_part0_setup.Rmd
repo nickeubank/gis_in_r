@@ -1,0 +1,42 @@
+---
+title: "Making maps in R: Setup"
+author: "Nick Eubank, building off excellent tutorials by Claudia Engel"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+
+```
+
+
+
+Try:
+
+```{r}
+install.packages(c("ggplot2","hexbin","ggmap","RColorBrewer", "XML", "dplyr"))
+```
+
+Plus, as before, `sp` and `rgdal`. 
+
+R comes wiht a basic `plot` command, which can also be used for simple map viewing. In this workshop we will will look into two different options to map spatial data in R. `sp` comes with a more refined plot command `spplot`, which takes `Spatial*~` objects. Secondly, there is `ggplot`, a more general purpose plotting library, but very powerful and one can make great maps. An additional package `ggmap` builds on `ggplot` and allows to draw in tiled basemaps from different services.

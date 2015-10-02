@@ -1,5 +1,6 @@
 ---
 title: "Spatial Data in R: Vector Data"
+author: "Nick Eubank, building off excellent tutorials by Claudia Engel"
 output:
   html_document:
     toc: true

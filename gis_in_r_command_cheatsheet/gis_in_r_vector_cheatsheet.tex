@@ -123,7 +123,7 @@
 \textbf{Re-project:} \\
 \hspace*{0.3cm}\texttt{newProjection <- CRS("projection string goes here")}\\
 \hspace*{0.3cm}\texttt{spTransform([Spatial object],newProjection)}\\
-\href{http://www.spatialreference.org/}{\underline{\textbf{Projection code database}}} \\
+\href{http://www.spatialreference.org/}{\underline{\textbf{Codes: www.spatialreference.org}}} \\
 
 %%%%%%%%%%
 % Merging
@@ -133,8 +133,12 @@
 \subsection*{Merging Data}
 
 \textbf{Spatial* + Non-Spatial Table:} \\
-\texttt{mySpatial@data <- merge(mySpatial@data, table, by = "cols", all.x=TRUE)}\\
-\\
+\texttt{library(plyr)}
+\texttt{mySpatial@data <- join(mySpatial@data, table, by = "cols", type="left")}
+\begin{itemize}
+	\item \textbf{Never} use \texttt{merge}; use \texttt{join} from \texttt{plyr}
+	\item Keep spatial data table in first position
+\end{itemize}
 \textbf{Spatial* + Spatial*:} \texttt{over([Spatial obj A],[Spatial obj B], fn=[NULL, or function if computing])}
 \begin{itemize}
 	\item \textbf\emph{{ENSURE PROJECTIONS MATCH FIRST!}}

@@ -36,7 +36,7 @@ library(dplyr)
 
 When working with spatial data, one is rarely interested in working with only one source of data. This tutorial will introduce a set of tools for linking vector data with other data sources. It begins by introducing how to link spatial vector data with non-spatial data from in table format, then turns to the problem of linking multiple sources of spatial data through spatial joins and intersects. 
 
-This tutorial uses the `sp`, `rgdal`, and `raster` libraries from the `RGIS1` tutorial. If you have not yet installed those, please revisit that tutorial for directions. In addition, this tutorial will also make use of the `rgeos` library, installation of which is discussed in `part0_setup`. 
+This tutorial uses the `sp`, `rgdal`, and `raster` libraries from the `RGIS1` tutorial. If you have not yet installed those, please revisit that tutorial for directions. In addition, this tutorial will also make use of the `rgeos` and `plyr` libraries, installation of which is discussed in `part0_setup`. 
 
 ***
 
@@ -63,4 +63,4 @@ install.packages("rgeos", type = "source", configure.args ="--with-geos-config=/
 
 ## 2. Test Installation
 
-To test your installation, just type `library(rgeos)`. If it loads, you're set!
+To test your installation, just type `library(rgeos)` and `library(plyr)`. If it loads, you're set!

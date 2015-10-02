@@ -1,0 +1,296 @@
+---
+title: "Merging Spatial Data"
+author: "Nick Eubank, building off excellent tutorials by Claudia Engel"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+
+```{r knitr_init, echo=FALSE, cache=FALSE, message=FALSE,results="hide"}
+library(knitr)
+library(rmdformats)
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+
+library(rgdal)
+library(sp)
+library(rgeos)
+library(plyr)
+library(raster)
+
+setwd("~/documents/polgeo/gis_in_r")
+districts<-readOGR("RGIS2_Data/shapefiles",'congressional_districts')
+grants<-readOGR("RGIS2_Data/shapefiles",'federal_grants')
+newcrs<-CRS(proj4string(districts))
+grants.newproj <- spTransform(grants, newcrs)
+
+```
+
+***
+
+When working with spatial data, one is rarely interested in working with only one source of data. This tutorial will introduce a set of tools for linking vector data with other data sources. It begins by introducing how to link spatial vector data with non-spatial data from in table format, then turns to the problem of linking multiple sources of spatial data through spatial joins and intersects. 
+
+This tutorial uses the `sp`, `rgdal`, and `raster` libraries from the `RGIS1` tutorial. If you have not yet installed those, please revisit that tutorial for directions. In addition, this tutorial will also make use of the `rgeos` library, installation of which is discussed in `part0_setup`. 
+
+***
+
+# 1.Spatial* + Non-Spatial
+
+An attribute join combines tabular data with a Spatial* object by associating each observation in a table with a GIS object (a polygon, line, or point). If you have done attribute joins of shapefiles in GIS software like _ArcGIS_ or _QGis_, or merged two datasets in _Stata_ or _R_, this process is analogous -- in an Attribute Join, a `Spatial*Dataframe` (be that a `SpatialPolygonsDataFrame`, `SpatialPointsDataFrame`, or `SpatialLinesDataFrame`) is merged with a table (an R dataframe) using a common _unique identifier_. 
+
+Assume we have:
+
+* a `SpatialPolygons` object named _worldCountries_, and
+* a dataframe called _countryData_ with the attribute data to join
+
+where:
+
+* _"id-number"_ is the colum that contains the unique identifier in _worldCountries_, and 
+* _"countryID"_ is the column that contains the unique identifier in _countryData_. 
+
+Then we can just merge worldCountries@data with countryData on those variables, with one small nuance: 
+
+**DO NOT MERGE YOUR DATA USING THE `merge` COMMAND!** 
+
+R keeps track of the relationship between rows in the attribute table an `Spatial*` shapes based on the order of observations in the attribute table. Unfortunately, the `merge` command can shuffle the order of rows in the attribute table, potentially jumbling the association of rows with Point/Line/Polygons.
+
+To avoid this problem, always use two rules when merging:
+* Use `join` from the `plyr` library with the `type="left"` argument
+* Also place the DataFrame associated with your `Spatial*` object in the first position. 
+
+In this case, that means our merge would look like the following:
+```{r eval=FALSE, tidy=FALSE}
+library(plyr)
+worldCountries@data <- join(worldCountries@data, countryData, by = c("id-number" = "countryID"), type = "left")
+```
+
+(FYI: `type="left"` is the same as using the `all.x=TRUE`  and `all.y=FALSE` options for `merge` -- it keeps all rows of the DataFrame in the first position and only matching rows of the second.)
+
+That's it!
+
+***
+
+### Exercise 1
+
+#. Download and unzip the `RGIS2_Data` folder. 
+
+#. Load the CSV table `district_vote_shares.csv` from the data loaded above into a dataframe in R and name it `vote_shares`.
+
+#. Load the shapefile `congressional_districts` from the folder `shapefiles` and call it `districts`.
+
+#. Check out the column names of `vote_shares` and of `districts` to determine which one might contain the unique identifier for the join. Hint: use the `names()` command.
+
+#. Join the `vote_shares` data frame with `districts` using `join` as described above. Use the `names()` command to see if the join was successful.
+
+#. Now we could plot one of the variables we just joined - try democratic vote share!
+
+```{r eval=FALSE}
+spplot (districts, "dem_vote_share")
+```
+
+***
+
+# 2. Spatial* + Spatial*
+
+Combining different Spatial* data sources is one of the most common things you will do in GIS research. Consider the following examples: 
+
+* You have a SpatialPoints file of households in India, and a SpatialPolygons file of Indian state borders. How do you estimate the average income of households in each state? 
+* You have a SpatialPoints file of government projects in the US and a SpatialPolygons file of electoral constituencies. Do elected officials with more projects in their district have higher rates of re-election?
+
+Most of the time, you answer these questions using some form of Spatial Join. Unlike the "Attribute Joins" described above, a spatial join in your first purely spatial operation. In a spatial join, observations from different datasets are joined based not on a variable, but by their relationship in space.
+
+## 2.1 Managing Coordinate Reference Systems (CRS)
+To combine two Spatial* datasets, the first thing you have to do is make sure they have the same CRS. If you try and work with two Spatial* objects in R that are not in the same CRS, you *will* get results, but those results will be nonsense! **Note that this is very different from programs like ArcGIS that will take care of this problem for you!** So before we can join Spatial* objects, we need to learn to re-project different data sources into a common CRS. 
+
+Make sure you remember the differences between *defining* a CRS and re-projecting:
+
+* **Defining a projection** is when the user tells the computer how it should *interpret* the x-y coordinates associated with a `Spatial*` object. For example, if data comes from a GPS device, one must tell the computer those x-y coordinates are latitudes and longitudes. It does not change the values of the numbers, just how the computer interprets them. 
+* **Re-projecting** is when you tell the computer to *convert* coordinates from one representation (like latitude and longitude) to another (like meters from some fixed reference point). It changes not just the `proj4string` associated with an object, but also all the actual x-y coordinates.  
+
+Re-projecting vector data requires two tools, both in the `sp` package:
+
+* a Coordinate Reference System `CRS` object with the new CRS you wish to apply
+* the `spTransform()` function
+
+As previously noted, a CRS object includes all the information needed to project a spatial object, generally including both a Geographic Coordinate System (the model of the Earth used to create the data) and a projection (a way of converting points on the three-dimensional Earth onto a two-dimensional plane).
+
+The CRS() function has access to a large library of coordinate systems and transformations, so you just need to know the code for the CRS you want. Codes -- often called a "projection strings" -- can be found [online here](http://www.spatialreference.org).
+
+Once you've found the projection you want, you can create the appropriate CRS object using one of two codes -- the `proj4` string, or the `EPSG` code. These are equivalent, but look a little different.  
+
+For example, you can create a CRS object for [UTM zone 33N (EPSG:32633)](http://spatialreference.org/ref/epsg/wgs-84-utm-zone-33n/) by either passing the full proj4 code:
+
+```{r eval=FALSE}
+MyNewProjection <- CRS("+proj=utm +zone=33 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+```
+
+or the EPSG code:
+
+```{r eval=FALSE}
+MyNewProjection <- CRS("+init=EPSG:32633")
+```
+
+Once you've defined a `CRS` object with the new CRS you want to use, all you have to do is execute the `spTransform` function on the object you want to re-project. If, for example, we have an object called MyCity and we want to reproject this into a new CRS called MyNewCRS, we would type:
+
+```{r eval=FALSE}
+MyNewCRS <- CRS("definition of projection goes here as string")
+MyCity.reprojected <- spTransform(MyCity, MyNewCRS)
+```
+
+Note that you can also retrieve the CRS from an existing `Spatial*` object with the `proj4string()` command! So if you have two files -- `file.a` and `file.b` -- a common idiom for reprojecting `file.b` into the CRS of `file.a` is:
+
+```{r, eval=FALSE}
+common.crs <- CRS(proj4string(file.a))
+file.b.reprojected <- spTransform(file.b, common.crs)
+```
+
+
+***
+
+### Exercise 2
+
+#. If you haven't already, create a directory `R_Workshop` on your Desktop and unzip `RGIS2_Data` into that folder. 
+
+#. Load the `rgdal`, and `sp` packages.
+
+#. If you haven't already, read in the `congressional_districts` shapefile into R and name it `districts`. 
+
+#. Read the `federal_grants` shapefile into R and name it `grants`.
+
+#. What is the CRS of `districts`?   What is the CRS of `grants`?
+
+#. Reproject `grants` so it matches the projection of `districts` and assign it to a new object called `grants.newproj`.
+
+#. You can use the `range()` command from the R base package to compare the coordinates before and after reprojection and confirm that you actually have transformed them. `range()` simply returns the _min_ and _max_ value of a vector of numbers that you give it. So you can check with:  
+`range(coordinates(grants))`  
+and  
+`range(coordinates(grants.newproj))`  
+
+#. You can also compare them visually with:  
+```{r}
+par(mfrow=c(1,2)) 
+plot(grants, axes=TRUE)
+plot(grants.newproj, axes=TRUE)
+```
+
+
+## 2.2. Spatial Joins: `over` Command
+
+They primary tool for doing spatial joins is the `over` command from the `sp` library. 
+
+The exact behavior of `over` depends on the inputs being used, but the basic idea is: "For each item of first position (the SOURCE), `over` returns information about items of second argument (TARGET) that intersect".
+
+For example, if for every grant (SOURCE) I wanted to get information about their district (TARGET), I could run:
+
+```{r}
+grants.districts <- over(grants.newproj, districts) # Get district data
+grants.districts
+
+# Recombine!
+grants.newproj@data <- cbind(grants.newproj@data, grants.districts)
+grants.newproj@data
+```
+
+Note that because `districts` is a `SpatialPolygonDataFrame`, `over` returned the relevant row of data for each point. If `districts` did not have any data, we would just get the index of the intersecting polygon for each grant. We can see this behavior if we use the `geometry()` function to strip away the DataFrame:
+
+
+```{r}
+grants.with.districts2 <- over(grants.newproj, geometry(districts)) 
+head(grants.with.districts2)
+```
+
+A few caveats:
+* By default, `over` will return the *first* item in the TARGET that intersects with an item in SOURCE if there are multiple items. 
+* `over` cannot handle intersection two `SpatialPolygons`
+
+
+### Multiple Intersections
+
+
+By default, when there are multiple TARGET observations that intersect a SOURCE observation, `over` will just return the first one. There are two ways to address this. 
+
+#### Option 1: `returnList`
+
+`over` normally returns a vector, which can only have one item per row. However, if you pass the argument `returnList=TRUE`, `over` will return a named list, where:
+* The name for each list entry is the index of the SOURCE observation
+* The contents are the indices of all items in the TARGET that intersect the SOURCE observation 
+
+Once you have this list, you can compute on it with tools like `sapply`. 
+
+Here's an example with just indices of intersecting TARGET observations:
+```{r}
+over.list <- over(districts,geometry(grants.newproj),returnList=TRUE)
+over.list
+```
+
+Then you can process these down (say, to get the number of each) and merge back in:
+```{r}
+num.grants <- sapply(over.list, length)
+districts@data <- cbind(districts@data, num.grants)
+districts@data
+```
+
+Here's an example where one gets back the relevant DataFrame rows of intersecting TARGET observations. 
+```{r}
+over(districts,grants.newproj,returnList=TRUE)
+```
+
+
+#### Option 2: `fn`
+
+However, if the second argument has a DataFrame associated with it, it is possible to ask `over` to aggregate the variables associated with intersecting TARGET observations. 
+
+For example, we can use this to get the average value of grants in each district:
+
+```{r}
+over(districts,grants.newproj[,'GrantBudge'], fn=mean)
+```
+
+If we had other information on food trucks -- like their value -- we could also ask for things like their mean value by passing the `mean` function. 
+
+
+
+# 3. Rasters + SpatialPolygons
+
+Finally, sometimes we have a SpatialPolygons, and want to know something about the properties within the polygons based on information in a raster dataset. For example, we might have the polygons of electoral districts in Africa, and want to know the average level of light as seen by satellites.
+
+In these situations, we use the `extract` tool, which returns the values of all the raster cells that fall within each polygon. (More specifically, it returns a list of numeric vectors, where the vector in position N corresponds to the raster cell values inside polygon N.) You can then compute on these values as you wish!
+
+## 3.1 Reprojecting Raster data
+As with `Spatial*` objects, the first step is to make sure everything has a common projection. 
+
+Raster objects can be reprojected using the `projectRaster` function. However, be aware that reprojecting rasters is not quite as costless as reprojecting vector data. Rasters must also have a regular grid pattern, and since different projections will not necessarily preserve that feature, reprojecting rasters means creating a new grid and computing each value based on overlapping cells from the old grid. Thus it is computationally difficult and can lead to losses of precision. Thus you are probably better off reprojecting your `SpatialPolygon` object rather than your raster. 
+
+## 3.2 The Extract Tool
+
+```{r}
+pollution <- raster("RGIS2_Data/pollution.tif")
+raster.crs <- CRS(projection(pollution))
+districts.reprojected <- spTransform(districts, raster.crs) 
+extracted.values <- extract(pollution,districts.reprojected)
+
+# A few example outputs -- 
+# low index polygons are in south SF and don't actually have values, so jumping to top. 
+extracted.values
+```
+
+You can get average values using the `sapply()` function:
+```{r}
+# A subsets of outputs
+sapply(extracted.values, mean)
+```
+
