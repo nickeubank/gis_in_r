@@ -38,6 +38,13 @@ grants<-readOGR("RGIS2_Data/shapefiles",'federal_grants')
 newcrs<-CRS(proj4string(districts))
 grants.newproj <- spTransform(grants, newcrs)
 
+pk.dist <- readOGR(dsn = "RGIS2_data/shapefiles", layer="pk_districts")
+strikes <- readOGR(dsn = "RGIS2_data/shapefiles", layer="pk_drone_strikes")
+
+dist.crs <-CRS(proj4string(pk.dist))
+strikes.projected <- spTransform(strikes, dist.crs)
+
+
 ```
 
 ***
@@ -263,6 +270,33 @@ over(districts,grants.newproj[,'GrantBudge'], fn=mean)
 If we had other information on food trucks -- like their value -- we could also ask for things like their mean value by passing the `mean` function. 
 
 
+## Exercise 2
+
+**Answer code at bottom of exercise, but no cheating!**
+
+Now that we've covered the basics of GIS in R, we can start working with real data. In the following exercises, we will work with data on US drone strikes in Pakistan collected by the Bureau of Investigative Journalism. Save your code from this exercise -- we'll use these shapefiles more. 
+
+#. Load the `pk_districts` shapefile from the `shapefiles` folder and save as `pk_dist`.
+
+#. Load the `pk_drone_strikes` shapefile from the `shapefiles` folder and save as `strikes`. 
+
+#. Plot the two shapefiles together using the `plot` command. The result should look something like the following. If it does not, consider whether you skipped an IMPORTANT STEP to combining different Spatial* objects.
+```{r, echo=FALSE,message=FALSE}
+dist.crs <-CRS(proj4string(pk.dist))
+strikes.projected <- spTransform(strikes, dist.crs)
+
+plot(pk.dist)
+par(new=T)
+plot(strikes.projected,type='.', col='blue', add=T)
+par(new=F)
+```
+
+#. Look at the `pk_drone_strikes` data. What information is included?
+
+#. Calculate the number of drone strikes per district in Pakistan. (Think: what is your SOURCE and what is your TARGET for this operation? Is it 1-1 or Many to 1) Where are drone strikes concentrated?
+
+#. What is the average fatality rate per district?
+
 
 # 3. Rasters + SpatialPolygons
 
@@ -294,3 +328,38 @@ You can get average values using the `sapply()` function:
 sapply(extracted.values, mean)
 ```
 
+***
+
+**Answers to Exercise 2**
+```{r}
+pk.dist <- readOGR(dsn = "RGIS2_data/shapefiles", layer="pk_districts")
+strikes <- readOGR(dsn = "RGIS2_data/shapefiles", layer="pk_drone_strikes")
+
+# Re-project
+dist.crs <-CRS(proj4string(pk.dist))
+strikes.projected <- spTransform(strikes, dist.crs)
+
+
+# Plot
+plot(pk.dist)
+par(new=T)
+plot(strikes.projected,type='.', col='blue', add=T)
+par(new=F)
+
+
+# Look at data
+head(strikes.projected@data)
+
+# Number per district
+over.list <- over(pk.dist,geometry(strikes.projected),returnList=TRUE)
+num.strikes <- sapply(over.list, length)
+pk.dist@data <- cbind(pk.dist@data, num.strikes)
+pk.dist@data[pk.dist@data$num.strikes != 0,]
+
+# Avg Fatality
+avg.fatality <- over(pk.dist,strikes.projected[c("Killed","CiviliansK")],fn=mean)
+pk.dist@data <- cbind(pk.dist@data, avg.fatality)
+pk.dist@data[!is.na(pk.dist@data$Killed),]
+
+
+```

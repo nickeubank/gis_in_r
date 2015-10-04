@@ -1,0 +1,85 @@
+\documentclass[12pt]{article} 
+\usepackage{amsfonts, amsmath, amssymb} 
+\usepackage{dcolumn, multirow} 
+\usepackage{setspace} 
+\usepackage{epsfig, subfigure, subfloat, graphicx}
+% \usepackage{booktabs}
+\usepackage{tabularx} 
+\usepackage{anysize, indentfirst, setspace} 
+\usepackage{verbatim, rotating, paralist}
+% \usepackage{pdfsync} 
+\usepackage{latexsym} 
+\usepackage{amsthm} 
+\usepackage{fullpage} 
+\usepackage{longtable} 
+\usepackage{natbib} 
+\usepackage{graphicx} 
+\usepackage{mathabx} 
+\usepackage{txfonts} 
+\usepackage{amsfonts} 
+\usepackage{parskip} 
+\usepackage{stmaryrd} 
+\usepackage{mathrsfs} 
+\usepackage{dsfont} 
+\usepackage{comment} 
+\usepackage{url} 
+\usepackage{rotating} 
+\usepackage{appendix}
+\usepackage{enumitem}
+\setlist{nosep}
+\usepackage[margin=2.5cm]{geometry}
+
+\title{\texttt{lapply} and \texttt{sapply}}
+\date{\today}
+
+\setcounter{tocdepth}{2}
+
+% This is the beginning of a real document!
+\begin{document} 
+\maketitle
+
+\subsubsection*{lapply} 
+\textbf{Apply} a function to each item in a \textbf{l}ist. 
+
+
+\begin{eqnarray}
+	my.list &=&  [[ \begin{bmatrix}
+           0 \\
+           1 \\
+           2
+         \end{bmatrix} , 
+		 \begin{bmatrix}
+		 	9 \\
+			10
+		 \end{bmatrix} ,
+		 \begin{bmatrix}
+		 	-1\\
+			1 \\
+			0
+		 \end{bmatrix}		 
+		 ]]\nonumber \\
+	lapply(my.list, mean) &=& [[ mean(\begin{bmatrix}
+           0 \\
+           1 \\
+           2
+         \end{bmatrix} ), 
+		 mean(\begin{bmatrix}
+		 	9 \\
+			10
+		 \end{bmatrix} ),
+		 mean(\begin{bmatrix}
+		 	-1\\
+			1 \\
+			0
+		 \end{bmatrix})
+		 ]] \nonumber \\
+	lapply(my.list, mean) &=& [[ 1,  9.5, 0]] \nonumber	
+\end{eqnarray}
+
+Note: lapply will return a \texttt{list} object! \\
+\hspace*{2cm}\texttt{typeof(lapply(my.list, mean))} is \texttt{list}
+
+\subsubsection*{sapply} 
+Execute \texttt{lapply}, then if possible \textbf{s}implify by converting the output from a list to numeric vector. 
+
+\end{document}
