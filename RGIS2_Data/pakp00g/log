@@ -1,0 +1,6 @@
+200510291328   0     1     0gyetman generate paknet
+200510291329   1    23     0gyetman build paknet
+200510291332   0     3     2gyetman polygrid paknet pakp00g p00tmp
+200510301120   0     0     0external /UFS/LOCAL1/DATA/GREGY/GPW/AS/PAKP00G
+200512021529   0     0     0gyetman   projectdefine grid pakp00g
+200512021529   0     0    17gyetman copy ../pakp00g

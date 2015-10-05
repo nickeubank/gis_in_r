@@ -32,7 +32,8 @@ library(rgeos)
 library(plyr)
 library(raster)
 
-setwd("~/documents/polgeo/gis_in_r")
+#setwd("~/documents/polgeo/gis_in_r")
+#setwd("U:/Documents/gis_in_r-master/RGIS2_Data")
 districts<-readOGR("RGIS2_Data/shapefiles",'congressional_districts')
 grants<-readOGR("RGIS2_Data/shapefiles",'federal_grants')
 newcrs<-CRS(proj4string(districts))
@@ -188,11 +189,13 @@ and
 `range(coordinates(grants.newproj))`  
 
 #. You can also compare them visually with:  
-```{r}
+```{r is_this_7, eval=FALSE}
 par(mfrow=c(1,2)) 
 plot(grants, axes=TRUE)
 plot(grants.newproj, axes=TRUE)
 ```
+
+![grants](images/grants.png)
 
 
 ## 2.2. Spatial Joins: `over` Command
@@ -225,12 +228,11 @@ A few caveats:
 * `over` cannot handle intersection two `SpatialPolygons`
 
 
-### Multiple Intersections
-
+**Multiple Intersections**
 
 By default, when there are multiple TARGET observations that intersect a SOURCE observation, `over` will just return the first one. There are two ways to address this. 
 
-#### Option 1: `returnList`
+### Multiple Intersections Option 1: `returnList`
 
 `over` normally returns a vector, which can only have one item per row. However, if you pass the argument `returnList=TRUE`, `over` will return a named list, where:
 * The name for each list entry is the index of the SOURCE observation
@@ -239,7 +241,7 @@ By default, when there are multiple TARGET observations that intersect a SOURCE 
 Once you have this list, you can compute on it with tools like `sapply`. 
 
 Here's an example with just indices of intersecting TARGET observations:
-```{r}
+```{r overlist}
 over.list <- over(districts,geometry(grants.newproj),returnList=TRUE)
 over.list
 ```
@@ -257,7 +259,7 @@ over(districts,grants.newproj,returnList=TRUE)
 ```
 
 
-#### Option 2: `fn`
+### Multiple Intersections Option 2: `fn`
 
 However, if the second argument has a DataFrame associated with it, it is possible to ask `over` to aggregate the variables associated with intersecting TARGET observations. 
 
@@ -281,15 +283,9 @@ Now that we've covered the basics of GIS in R, we can start working with real da
 #. Load the `pk_drone_strikes` shapefile from the `shapefiles` folder and save as `strikes`. 
 
 #. Plot the two shapefiles together using the `plot` command. The result should look something like the following. If it does not, consider whether you skipped an IMPORTANT STEP to combining different Spatial* objects.
-```{r, echo=FALSE,message=FALSE}
-dist.crs <-CRS(proj4string(pk.dist))
-strikes.projected <- spTransform(strikes, dist.crs)
 
-plot(pk.dist)
-par(new=T)
-plot(strikes.projected,type='.', col='blue', add=T)
-par(new=F)
-```
+![test](images/pk_drone_overlay.png)
+
 
 #. Look at the `pk_drone_strikes` data. What information is included?
 
@@ -328,10 +324,24 @@ You can get average values using the `sapply()` function:
 sapply(extracted.values, mean)
 ```
 
+
+### Exercise 3
+
+*Answers below, but no cheating!*
+
+#. Load the population raster from the RGIS2_Data folder and call it `pk.pop` with something like the following command (depending on your working directory): `pk.pop <- raster("pakp00g")`. This file is a raster where the value of each cell is an estimate of the number of people living in that area. (Note that you are pointing R at a folder with the raster components -- `raster`, unlike `rgdal`, is smart enough to figure out what you're asking!)
+
+#. Use the extract command to estimate the population of each Pakistani district.
+
+#. Compute the number of drone-strikes per capita for each district. .
+
+
 ***
 
+# Solutions
+
 **Answers to Exercise 2**
-```{r}
+```{r, eval=FALSE}
 pk.dist <- readOGR(dsn = "RGIS2_data/shapefiles", layer="pk_districts")
 strikes <- readOGR(dsn = "RGIS2_data/shapefiles", layer="pk_drone_strikes")
 
@@ -361,5 +371,24 @@ avg.fatality <- over(pk.dist,strikes.projected[c("Killed","CiviliansK")],fn=mean
 pk.dist@data <- cbind(pk.dist@data, avg.fatality)
 pk.dist@data[!is.na(pk.dist@data$Killed),]
 
+```
 
+
+***
+
+**Answers to Exercise 3**
+
+```{r, eval=FALSE}
+pk.pop <- raster("RGIS2_Data/pakp00g")
+new.crs <- CRS(projection(pk.pop))
+pk.dist.rasterproj <- spTransform(pk.dist, new.crs)
+
+pops <- extract(pk.pop,pk.dist.rasterproj)
+pops.summed <- sapply(pops,sum)
+pk.dist.rasterproj@data <- cbind(pk.dist.rasterproj@data, pops.summed)
+
+pk.dist.rasterproj@data$strikes.percap <- 
+  pk.dist.rasterproj@data$num.strikes / pk.dist.rasterproj@data$pops.summed
+
+head(pk.dist.rasterproj@data[pk.dist.rasterproj@data$num.strikes >0,])
 ```

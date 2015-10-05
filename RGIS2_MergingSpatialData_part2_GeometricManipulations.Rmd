@@ -1,0 +1,192 @@
+---
+title: "Merging Spatial Data"
+author: "Nick Eubank, building off excellent tutorials by Claudia Engel"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+
+```{r knitr_init, echo=FALSE, cache=FALSE, message=FALSE,results="hide"}
+library(knitr)
+library(rmdformats)
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+
+library(rgdal)
+library(sp)
+library(rgeos)
+library(plyr)
+library(raster)
+
+pk.dist <- readOGR(dsn = "RGIS2_data/shapefiles", layer="pk_districts")
+strikes <- readOGR(dsn = "RGIS2_data/shapefiles", layer="pk_drone_strikes")
+dist.crs <-CRS(proj4string(pk.dist))
+strikes.projected <- spTransform(strikes, dist.crs)
+pk.pop <- raster("RGIS2_Data/pakp00g")
+new.crs <- CRS(projection(pk.pop))
+pk.dist.rasterproj <- spTransform(pk.dist, new.crs)
+
+
+setwd("~/documents/polgeo/gis_in_r")
+districts<-readOGR("RGIS2_Data/shapefiles",'congressional_districts')
+grants<-readOGR("RGIS2_Data/shapefiles",'federal_grants')
+newcrs<-CRS(proj4string(districts))
+grants.newproj <- spTransform(grants, newcrs)
+
+
+```
+
+***
+
+When working with spatial data, one is rarely interested in working with only one source of data. This tutorial will introduce a set of tools for linking vector data with other data sources. It begins by introducing how to link spatial vector data with non-spatial data from in table format, then turns to the problem of linking multiple sources of spatial data through spatial joins and intersects. 
+
+This tutorial uses the `sp`, `rgdal`, and `raster` libraries from the `RGIS1` tutorial. If you have not yet installed those, please revisit that tutorial for directions. In addition, this tutorial will also make use of the `rgeos` library, installation of which is discussed in `part0_setup`. 
+
+***
+
+# 1. RGEOS Library
+
+The `over` command will cover a remarkable number of situations, but it is really only interesting if two shapes intersect exactly. In practice, however, we are often interested in sligthly more flexible questions: how many cities are *within 10km* of a drone strike? Or how many people live close to a government project? 
+
+When we want to do fancer geometric operations, we use the `rgeos` library. `rgeos` (which stands for "R interface to the *Geometry Engine - Open Source* library") is a set of tools for geometric operations. `GEOS` a huge library, and one that underlies many spatial tools (not just in R). Whenever you're thinking about a geometric operation, `rgeos` is the first place to look.
+
+
+`rgeos` tools can be broadly divided into three camps. Here some of the most commonly used ones. 
+
+### Calculating Properties
+
+* **gArea**: calculate area of a shape
+* **gLength**: calculates length of line / circumference of polygons
+* **gDistance**: distance between items
+
+### Making New Shapes
+
+* **gBuffer**: Expand points into circles of given radius
+* **gCentroid**: Collapse polygons to their centroids
+* **gDifference**, **gUnion**, and **gIntersection**: execute set operations on polygons
+* **gUnionCascaded**: dissolves a collection of shapes into a single shape. 
+* **gSimplify**: If your polyon is too high a resolution (higher than needed for analysis, and too high for fast processing), reduces the number of vertices while maintaining shape to the best of it's ability. 
+
+
+### Testing Geometric Relationships
+
+* **gIntersects**: test if shapes intersect. Primarily useful for testing whether two polygons intersect, since this is not something`over` can do. 
+* **gContains**: Is one spatial object entirely within another?
+* **gIsValid**: Very useful -- make sure your geometries aren't corrupt!
+
+
+## Example 1: Calculating Area
+
+The syntax for these tools varies both across tools and depending on the input types, but here are some basic examples with the congressional district data. 
+
+Area of districts:
+(this is actually already in the districts data, but let's recompute anyway!)
+```{r}
+areas <- gArea(districts, byid=TRUE)
+areas
+
+districts@data <- cbind(districts@data, areas)
+```
+
+This simple example demonstrates two important things about `rgeos`: 
+
+* **Units**: `rgeos` isn't a spatial library -- it just does geometry. It takes x-y coordinates and applies geometric formula. Thus the units will always be the units of the x-y coordinates, which come from your projection.
+* **`byid`**: `byid` is an option on most `rgeos` commands. If `byid=TRUE`, each observation in a Spatial* object is handled separately; if `byid=FALSE`, a Spatial* object is treated as one big geometry. So if one were working with a `SpatialPolygons` object of US states, when `byid=TRUE`, the analysis would be conducted for each state; if `byid=FALSE`, it would essentially run the analysis against the United States as a whole. 
+
+For example, if we didn't change `byid` to `TRUE`, we'd get a single measure of area for all the congressional districts together:
+
+```{r}
+gArea(districts, byid=TRUE)
+```
+
+
+## Example 2: Buffer
+
+A common operation is to create buffers (polygons of fixed radius) around points. Let's make 7km buffers around government grants.
+
+```{r}
+summary(grants.newproj) # Check projection to make sure we know units!
+buffered.grants <- gBuffer(grants.newproj, width=7000) # 5km = 7,000 meters. 
+
+plot(districts)
+par(new=T)
+plot(buffered.grants, col='blue', add=T)
+```
+
+Note that because we were interested in areas within 5km of *any* government grant, we left `byid=FALSE` (the default), so `buffered.grants` has only 1 feature. If we had passed `byid=TRUE` we could have gotten different polygons (many overlapping) for each grant. 
+
+## Example 3: Set operations
+
+The figure above looks a little odd because the buffered polygons spread into the ocean. We can fix this by "clipping" the buffered polygons using `gIntersection`. 
+
+```{r}
+intersection <- gIntersection(buffered.grants, districts, byid=TRUE)
+plot(districts)
+par(new=T)
+plot(intersection, col='blue', add=T)
+par(new=F)
+```
+
+Interestingly, note that while `buffered.grants` was previously one feature, because we passed `byid=TRUE`, the intersection with the districts executed the union with each congressional district, creating three distinct polygons:
+
+```{r}
+intersection
+```
+
+However, note that `rgeos` struggles if we just change `byid` to `FALSE`. The following code:
+```{r, eval=FALSE}
+gIntersection(buffered.grants, districts, byid=FALSE)
+```
+Generates the error:
+`Error in RGEOSBinTopoFunc(spgeom1, spgeom2, byid, id, drop_lower_td, "rgeos_intersection") :` 
+`  TopologyException: no outgoing dirEdge found at 570113.57942913717 4148852.3204373871`
+
+This kind of problem will come up from time to time. Remember that `rgeos` is working with objects whose vertices are defined by numbers of limited precision -- sometimes it'll have weird problems, and you have to experiment. In this case, I *think* this is because the edges of the congressional districts don't quite coincide due to problems of machine precision. To fix this, we can dissolve the districts first using `gUnionCascaded`:
+
+```{r}
+merged.districts <- gUnionCascaded(districts)
+plot(merged.districts)
+
+intersection2 <- gIntersection(buffered.grants, merged.districts, byid=FALSE)
+intersection2
+plot(districts)
+par(new=T)
+plot(intersection2, col='blue', add=T)
+par(new=F)
+```
+Now the intersection is only one part!
+
+
+
+### Exercise 1
+
+Let's try and figure out what percentage of residents of Pakistans Federally Administered Tribal Areas (FATA, the regions with the most drone strikes) live within 1km of a drone strike. 
+
+#. Subset the pk.dist data for the Province of Fata.
+#. Create a buffer of 1km around each drone strike with the `gBuffer` command. 
+#. Create a buffer around the center
+#. Select all polys that fall in the buffer
+
+Let's do it! 
+
+
+
+***
+
+**Answers to Exercise 1**
+
+
