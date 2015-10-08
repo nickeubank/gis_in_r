@@ -32,6 +32,9 @@ library(rgeos)
 library(plyr)
 library(raster)
 
+
+setwd("~/dropbox/gis_in_r")
+
 pk.dist <- readOGR(dsn = "RGIS2_data/shapefiles", layer="pk_districts")
 strikes <- readOGR(dsn = "RGIS2_data/shapefiles", layer="pk_drone_strikes")
 dist.crs <-CRS(proj4string(pk.dist))
@@ -41,7 +44,7 @@ new.crs <- CRS(projection(pk.pop))
 pk.dist.rasterproj <- spTransform(pk.dist, new.crs)
 
 
-setwd("~/documents/polgeo/gis_in_r")
+#setwd("E:/Users/neubank/dropbox/gis_in_r")
 districts<-readOGR("RGIS2_Data/shapefiles",'congressional_districts')
 grants<-readOGR("RGIS2_Data/shapefiles",'federal_grants')
 newcrs<-CRS(proj4string(districts))
@@ -58,7 +61,7 @@ This tutorial uses the `sp`, `rgdal`, and `raster` libraries from the `RGIS1` tu
 
 ***
 
-# 1. RGEOS Library
+# 1. RGEOS Overview
 
 The `over` command will cover a remarkable number of situations, but it is really only interesting if two shapes intersect exactly. In practice, however, we are often interested in sligthly more flexible questions: how many cities are *within 10km* of a drone strike? Or how many people live close to a government project? 
 
@@ -89,49 +92,72 @@ When we want to do fancer geometric operations, we use the `rgeos` library. `rge
 * **gIsValid**: Very useful -- make sure your geometries aren't corrupt!
 
 
-## Example 1: Calculating Area
+# RGEOS Gotchas
 
-The syntax for these tools varies both across tools and depending on the input types, but here are some basic examples with the congressional district data. 
+The syntax for these tools varies both across tools and depending on the input types, there are three concepts that come up constantly.
 
-Area of districts:
-(this is actually already in the districts data, but let's recompute anyway!)
+## Gotcha 1: Units
+`rgeos` isn't a spatial library -- it just does geometry. It takes x-y coordinates and applies geometric formula. Thus the units will always be the units of the x-y coordinates, which come from your projection. So here, we can check the projection to find our units:
+
 ```{r}
-areas <- gArea(districts, byid=TRUE)
-areas
-
-districts@data <- cbind(districts@data, areas)
+proj4string(districts)
 ```
+The units (`+units=m`) are meters. 
 
-This simple example demonstrates two important things about `rgeos`: 
 
-* **Units**: `rgeos` isn't a spatial library -- it just does geometry. It takes x-y coordinates and applies geometric formula. Thus the units will always be the units of the x-y coordinates, which come from your projection.
-* **`byid`**: `byid` is an option on most `rgeos` commands. If `byid=TRUE`, each observation in a Spatial* object is handled separately; if `byid=FALSE`, a Spatial* object is treated as one big geometry. So if one were working with a `SpatialPolygons` object of US states, when `byid=TRUE`, the analysis would be conducted for each state; if `byid=FALSE`, it would essentially run the analysis against the United States as a whole. 
+## Gotcha 2: byid
+`byid` is an option on most `rgeos` commands. If `byid=TRUE`, each observation in a Spatial* object is handled separately; if `byid=FALSE`, a Spatial* object is treated as one big geometry. So if one were working with a `SpatialPolygons` object of US states, when `byid=TRUE`, the analysis would be conducted for each state; if `byid=FALSE`, it would essentially run the analysis against the United States as a whole. 
 
-For example, if we didn't change `byid` to `TRUE`, we'd get a single measure of area for all the congressional districts together:
+For example, here is the `gArea` with and without `byid=TRUE`. When true, we get an area for each polygon; when false, we get the area of all polygons combined. 
 
 ```{r}
 gArea(districts, byid=TRUE)
+
+gArea(districts, byid=FALSE)
+```
+
+## Gotcha 3: id
+
+The output of almost all `rgeos` commands will be organized by `id`. For example, with `gArea`, each area has a label: 0, 1, and 2. When working with Spatial*DataFrame objects, `id` will be the rowname for a given observation, just like with tools we've worked with before.
+
+To see an object's `id`s, you can use the combination of the `names` command and the `geometry` command (if you don't use the `geometry` command you'll get column names for objects with associated DataFrames:
+
+```{r}
+names(geometry(districts))
 ```
 
 
-## Example 2: Buffer
+Things get a little more complicated when `rgeos` creates new polygons using tools like `gBuffer` or `gIntersect`. `rgeos` tends to try and do smart things, but the behavior does vary across tools, so always be careful. 
 
-A common operation is to create buffers (polygons of fixed radius) around points. Let's make 7km buffers around government grants.
+Here's an example -- let's create buffers (polygons of fixed radius) around our grants the buffers 7km, so we get back polygons for all points within 7km of each project. 
 
 ```{r}
-summary(grants.newproj) # Check projection to make sure we know units!
-buffered.grants <- gBuffer(grants.newproj, width=7000) # 5km = 7,000 meters. 
+proj4string(grants.newproj) # check units!
+buffered.grants <- gBuffer(grants.newproj, width=7000, byid=TRUE)
+names(geometry(buffered.grants))
 
 plot(districts)
 par(new=T)
 plot(buffered.grants, col='blue', add=T)
 ```
 
-Note that because we were interested in areas within 5km of *any* government grant, we left `byid=FALSE` (the default), so `buffered.grants` has only 1 feature. If we had passed `byid=TRUE` we could have gotten different polygons (many overlapping) for each grant. 
+Note that points has given rise to a new polygon, many of them overlapping, and they were given simple names based on the names of the points that generated them. However, if we want a polygon of points within 7km of *any* grant, we can pass byid=FALSE`. Now we have one polygon (named `buffer`) instead of 5. 
 
-## Example 3: Set operations
+```{r}
+buffered.grants <- gBuffer(grants.newproj, width=7000, byid=FALSE)
+names(geometry(buffered.grants))
 
-The figure above looks a little odd because the buffered polygons spread into the ocean. We can fix this by "clipping" the buffered polygons using `gIntersection`. 
+plot(districts)
+par(new=T)
+plot(buffered.grants, col='blue', add=T)
+```
+
+
+# Unusual Tools: Set operations
+
+`rgeos` can also do set operations on polygons, like returning areas in which different polygons coincide, don't coincide.
+
+This can be useful for lots of things. For example, the figure of grant buffers above looks a little odd because the buffered polygons spread into the ocean. We can fix this by "clipping" the buffered polygons using `gIntersection` -- essentially keeping only the part of the buffer that also coincides with districts.
 
 ```{r}
 intersection <- gIntersection(buffered.grants, districts, byid=TRUE)
@@ -141,21 +167,33 @@ plot(intersection, col='blue', add=T)
 par(new=F)
 ```
 
-Interestingly, note that while `buffered.grants` was previously one feature, because we passed `byid=TRUE`, the intersection with the districts executed the union with each congressional district, creating three distinct polygons:
+Interestingly, note that while `buffered.grants` was previously one feature, because we passed `byid=TRUE`, the intersection with the districts executed the intersection for each congressional district, creating three distinct polygons.
 
 ```{r}
 intersection
 ```
 
-However, note that `rgeos` struggles if we just change `byid` to `FALSE`. The following code:
+Moreover, the `id`s assigned to these polygons are just concatenations of the `id`s of `buffered.grants` and `districts`, a pattern that would hold even if `buffered.grants` had fancier names:
+```{r}
+names(geometry(buffered.grants))
+names(geometry(districts))
+names(geometry(intersection))
+```
+
+# Last Word: `byid` Issues
+
+One thing to be aware of is that `rgeos` sometimes struggles when `byid` is set to `FALSE`. For example, if we want to clip our buffered polygon by the extent of all electoral districts -- but not add cuts where the polygon crosses the lines between districts -- one might try the following code:
+
+The following code:
 ```{r, eval=FALSE}
 gIntersection(buffered.grants, districts, byid=FALSE)
 ```
-Generates the error:
+
+But oddly, this generates the error:
 `Error in RGEOSBinTopoFunc(spgeom1, spgeom2, byid, id, drop_lower_td, "rgeos_intersection") :` 
 `  TopologyException: no outgoing dirEdge found at 570113.57942913717 4148852.3204373871`
 
-This kind of problem will come up from time to time. Remember that `rgeos` is working with objects whose vertices are defined by numbers of limited precision -- sometimes it'll have weird problems, and you have to experiment. In this case, I *think* this is because the edges of the congressional districts don't quite coincide due to problems of machine precision. To fix this, we can dissolve the districts first using `gUnionCascaded`:
+This kind of problem will come up from time to time -- my general solution is to first dissolve the layer we want to consider as one polygon into a single polygon using `gUnionCascaded`, *then* execute the second command:
 
 ```{r}
 merged.districts <- gUnionCascaded(districts)
@@ -171,17 +209,22 @@ par(new=F)
 Now the intersection is only one part!
 
 
+## Exercise 1
 
-### Exercise 1
-
-Let's try and figure out what percentage of residents of Pakistans Federally Administered Tribal Areas (FATA, the regions with the most drone strikes) live within 1km of a drone strike. 
+Let's try and figure out what percentage of residents of Pakistans Federally Administered Tribal Areas (FATA, the regions with the most drone strikes) live within 7km of a drone strike. 
 
 #. Subset the pk.dist data for the Province of Fata.
-#. Create a buffer of 1km around each drone strike with the `gBuffer` command. 
-#. Create a buffer around the center
-#. Select all polys that fall in the buffer
 
-Let's do it! 
+#. Create a buffer of 5km around each drone strike with the `gBuffer` command. 
+
+#. Intersect this with Districts using `gUnion`. 
+
+#. Measure the share of each district within 1km of a drone strike using the `gArea` command for each district, and for the buffered strikes in each district. 
+
+#. In the last exercise, we measured strikes per capita -- did this number seem high or low? Does this measure of proximity to strikes seem different?
+
+#. Run this analysis just for strikes in 2012. If you've used ArcGIS before, how would you re-run this analysis in ArcGIS? Would it be easier or harder?
+
 
 
 
@@ -189,4 +232,38 @@ Let's do it!
 
 **Answers to Exercise 1**
 
+
+```{r, eval=FALSE}
+pk.dist <- readOGR(dsn = "RGIS2_data/shapefiles", layer="pk_districts")
+strikes.wrongproj <- readOGR(dsn = "RGIS2_data/shapefiles", layer="pk_drone_strikes")
+dist.crs <-CRS(proj4string(pk.dist))
+strikes <- spTransform(strikes.wrongproj, dist.crs)
+
+# Subset to Fata
+fata <- pk.dist[pk.dist$PROVINCE=='Fata',]
+fata$OBJECTID <- NULL # Drop column called objectid -- came from shapefile. Just confuses things. 
+
+# Buffer strikes
+proj4string(strikes) # Check projection units
+strike.buffer <- gBuffer(strikes, width=7000, byid=FALSE, id="")
+strike.buffer.inter <- gIntersection(strike.buffer, fata, byid=TRUE)
+
+# Now to merge back in with Districts based on row numbers
+strike.areas <- as.data.frame(gArea(strike.buffer.inter, byid=TRUE))
+colnames(strike.areas) <- "buffer_area"
+strike.areas$rownumbers <- as.numeric(rownames(strike.areas))
+fata@data$rownumbers <- as.numeric(rownames(fata@data))
+
+fata@data <- join(fata@data, strike.areas, by="rownumbers", type="left")
+
+# Calculate share of area within strike buffer
+fata@data[is.na(fata@data$buffer_area),"buffer_area"]<-0
+fata@data$share_covered <- fata@data$buffer_area / fata@data$Shape_Area
+fata@data$share_covered
+
+# Only for 2012: add: 
+#       strikes <- strikes[strikes$year == 2012,]
+# To start of code and just rerun!
+
+```
 
