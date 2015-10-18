@@ -1,0 +1,238 @@
+---
+title: "Making maps in R"
+author: "Nick Eubank, building off excellent tutorials by Claudia Engel"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+
+```{r knitr_init, echo=FALSE, cache=FALSE, message=FALSE, results="hide", warning=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+
+library(rgeos)
+library(rgdal)
+library(sp)
+library(plyr)
+
+setwd("~/dropbox/gis_in_r/")
+
+```
+
+R comes wiht a basic `plot` command, which can also be used for simple map viewing. In this workshop we will will look into two difdferent options to map spatial data in R. `sp` comes with a more refined plot command `spplot`, which takes `Spatial*~` objects. Secondly, there is `ggplot`, a more general purpose plotting library, but very powerful and one can make great maps. An additional package `ggmap` builds on `ggplot` and allows to draw in tiled basemaps from different services.
+
+***
+
+#. plot and spplot
+
+In general, plotting raster data is super easy, since a raster is just a regular grid with values in each cells, and computer images are inherently regular grids with colors in each cell (pixel). 
+
+As with Vector data, there are two main tools for plotting raster data. 
+
+* `plot`: plot shapes associated with Spatial* or Raster objects
+* `image`: plot shapes associated with Spatial* objects AND color them based on attributes in a associated DataFrame. 
+
+## Plot
+
+The syntax for each should be relatively familiar to anyone used to working with `plot` in other settings -- just pass the sp object to plot! Here's an example using the `districts` object from the RGIS2 tutorial:
+
+```{r}
+districts<-readOGR("RGIS3_Data/shapefiles",'districts_w_voteshares')
+names(districts)[names(districts)=="dm_vt_s"] <- "dem_vote_share" # rename one compressed column name
+plot(districts)
+```
+
+It's also easy to add some basic options using standard `plot` modifiers:
+
+```{r}
+plot(districts, col="red")
+title(main="California Electoral Districts", sub="House of Representatives")
+```
+
+When plotting points, you can also use lots of the basic `plot` options for points. [You can find a table of symbol-to-number mappings here](http://www.statmethods.net/advgraphs/parameters.html)
+```{r}
+grants<-readOGR("RGIS3_Data/shapefiles",'grants')
+plot(grants, pch=22, col="red", bg="blue")
+```
+
+### Multiple layers with `plot`
+
+It's also easy to plot multiple layers using `plot` with the `add` option:
+
+```{r}
+stopifnot(proj4string(grants)==proj4string(districts)) # Check in same projection before combining!
+
+buffered.grants <- gBuffer(grants, width=7000, byid=FALSE)
+
+plot(districts)
+plot(buffered.grants, col="blue", add=T)
+```
+
+
+## spplot
+`spplot` is an extension of `plot` specifically for making maps of Spatial* objects. In particular, it's very useful for filling in polygon colors based on attributes in an associated DataFrame (what are called "chloropleth" maps). Just pass an Spatial*DataFrame object and the name of columns you want to plot (if you don't pass specific column names, a separate figure will be created for each column.)
+
+```{r}
+spplot(districts, "dem_vote_share", main="California Electoral Districts", sub="Democratic Vote Shares")
+```
+
+[A big list of example graphs with associated code can be found here](http://rspatial.r-forge.r-project.org/gallery/)
+
+[Another guide is here](https://sites.google.com/site/spatialr/plottingmaps)
+
+### Custom colors for `spplot`
+
+If you don't like the default color scheme, you can use your own with ColorBrewer, which you can install with `install.packages("RColorBrewer")`. Once loaded, you can see a list of all the color pallets that come with `RColorBrewer` with the command:
+
+```{r}
+library(RColorBrewer)
+display.brewer.all()
+```
+
+Once you've picked a palette you like, create a palette object as follows, where `n` is the number of cuts you want to use, and `name` is the name of the color ramp. Note that different palettes have different limits on the maximium and minimium number of cuts allowed. 
+```{r}
+my.palette <- brewer.pal(n = 3, name = "BuPu")
+```
+
+Then you can just pass this pallet to `spplot`, making sure to set the number of cuts to **1 minus the number of colors**. 
+```{r}
+spplot(districts, "dem_vote_share", main="California Electoral Districts", sub="Democratic Vote Shares", col.regions = my.palette, cuts=2)
+```
+
+### Controlling breaks
+If you don't want even cuts for your colors, you can use the `classInt` library to make custom cuts. 
+
+```{r}
+library(classInt)
+breaks.qt <- classIntervals(districts$dem_vote_share, n = 2, style = "quantile")
+
+# Tweak just a little to get top value inside interval and make a simple list. 
+br <- breaks.qt$brks
+offs <- 1e-07
+br[1] <- br[1] - offs
+br[length(br)] <- br[length(br)] + offs
+
+
+spplot(districts, "dem_vote_share", main="California Electoral Districts", sub="Democratic Vote Shares", col.regions = my.palette, at=br)
+
+```
+
+### Multiple layers with `spplot`
+`spplot` allows users to add multiple layers or symbols using the `sp.layout` argument. To use `sp.layout`, you first create a new list where:
+
+* the first item is the type of layer to add, 
+* the second argument is the actual object to plot, 
+* and any following items are plotting options. 
+
+You then pass this list to the `sp.layout` argument. For example, if I wanted to overlay the buffered grant locations on electoral districts, I would use the following codes:
+
+```{r}
+# Create a layer-list
+buffers.layer <- list("sp.polygons", buffered.grants, fill="green")
+
+# Plot with layer-list passed to `sp.layout`
+spplot(districts, "dem_vote_share",
+       sp.layout = buffers.layer)
+```
+
+If you want to add multiple layers, just combine the layer-lists as follows. Note that order of items in the list will determine plotting order!
+
+```{r}
+# Create a layer-list
+buffers.layer <- list("sp.polygons", buffered.grants, fill="green")
+grants.layer <- list("sp.points", grants, pch=15, col="red")
+
+
+# Plot with layer-list passed to `sp.layout`
+spplot(districts, "dem_vote_share", 
+       sp.layout = list(buffers.layer,grants.layer))
+```
+
+### Accoutrements 
+You can also use the `sp.layout` option to add other things, like compass arrows or scales. In most cases, the key to this is to set "offset", which defines the location of the bottom left hand corner of what you're working with. Getting offsets right will kinda drive you crazy. 
+
+Here's a small handfull:
+
+```{r}
+districts@bbox # Check dimensions to help guide offset choices
+
+scale = list("SpatialPolygonsRescale", layout.scale.bar(), scale = 50000, fill=c("transparent","black"), offset = c(500000, 4100000))
+
+# The scale argument sets length of bar in map units
+text1 = list("sp.text", c(500000, 4106000), "0")
+text2 = list("sp.text", c(550000, 4106000), "50 km")
+
+arrow = list("SpatialPolygonsRescale", layout.north.arrow(), 
+  offset = c(510000,4170000), scale = 15000)
+
+
+spplot(districts, "dem_vote_share", 
+       sp.layout = list(scale, text1, text2, arrow))
+```
+
+# Dot-Density Plots
+
+Dot-Density plots are a favorite these days, and they can be made relatively easily with the use of `spplot` and the `dotsInPolys` tool from the `maptools` library. Not much to explain here, so here's just an example of making a dot-density plot for Santa Clara county from census polygons!
+
+
+```{r}
+library(maptools)
+
+# Get census polygons
+census <- readOGR("RGIS3_data/shapefiles", "santa_clara_demographics")
+
+# Get feel for data with white population (largest group)
+spplot(census, "white")
+
+
+# Setting a seed is a good idea -- since points are random, it's helpful for replication to make sure this code will always make the same result. 
+set.seed(47)
+
+# Create a fixed number of points at random locations within each polygon based on a polygon variable. 
+# Since the field values here are the number of people, we can get one dot per 100 people as follows:
+people.per.dot = 100
+
+dots.w <- dotsInPolys(census, as.integer(census$white/people.per.dot)) 
+dots.w$ethnicity <-"White" 
+
+dots.h <- dotsInPolys(census, as.integer(census$hispanic/people.per.dot)) 
+dots.h$ethnicity <-"Hispanic" 
+
+dots.b <- dotsInPolys(census, as.integer(census$black/people.per.dot)) 
+dots.b$ethnicity <-"Black" 
+
+# Gather all the dots into a single SpatialPoints
+dots.all <- rbind(dots.w, dots.h, dots.b) 
+
+
+# Since ethnicity is a string, order is alphabetical. You can change if you want by making these categoricals!
+my.palette <- c("black", "brown", "grey")
+point.size <- 0.5
+
+# Make sp.layout list for the actually boundaries
+census.tract.layer <- list("sp.polygons", census)
+
+spplot(dots.all, "ethnicity", sp.layout=census.tract.layer, col.regions=my.palette, cex = point.size,
+       main="Demographic Distribution of Santa Clara County")
+```
+
+
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+

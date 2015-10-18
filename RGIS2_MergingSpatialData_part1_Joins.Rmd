@@ -1,6 +1,6 @@
 ---
 title: "Merging Spatial Data"
-author: "Nick Eubank, building off excellent tutorials by Claudia Engel"
+author: "By Nick Eubank, building off excellent tutorials by Claudia Engel"
 output:
   html_document:
     toc: true
@@ -12,7 +12,7 @@ output:
 ---
 
 
-```{r knitr_init, echo=FALSE, cache=FALSE, message=FALSE,results="hide"}
+```{r knitr_init, echo=FALSE, cache=FALSE, message=FALSE,results="hide", warning=FALSE}
 library(knitr)
 library(rmdformats)
 ## Global options
@@ -392,3 +392,5 @@ pk.dist.rasterproj@data$strikes.percap <-
 
 head(pk.dist.rasterproj@data[pk.dist.rasterproj@data$num.strikes >0,])
 ```
+
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.

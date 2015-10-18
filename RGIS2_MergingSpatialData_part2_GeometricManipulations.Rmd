@@ -1,6 +1,6 @@
 ---
 title: "Merging Spatial Data"
-author: "Nick Eubank, building off excellent tutorials by Claudia Engel"
+author: "By Nick Eubank, building off excellent tutorials by Claudia Engel"
 output:
   html_document:
     toc: true
@@ -12,7 +12,7 @@ output:
 ---
 
 
-```{r knitr_init, echo=FALSE, cache=FALSE, message=FALSE,results="hide"}
+```{r knitr_init, echo=FALSE, cache=FALSE, message=FALSE,results="hide", warning=FALSE}
 library(knitr)
 library(rmdformats)
 ## Global options
@@ -92,11 +92,11 @@ When we want to do fancer geometric operations, we use the `rgeos` library. `rge
 * **gIsValid**: Very useful -- make sure your geometries aren't corrupt!
 
 
-# RGEOS Gotchas
+# 2. Key RGEOS Concepts
 
 The syntax for these tools varies both across tools and depending on the input types, there are three concepts that come up constantly.
 
-## Gotcha 1: Units
+## 2.1: Units
 `rgeos` isn't a spatial library -- it just does geometry. It takes x-y coordinates and applies geometric formula. Thus the units will always be the units of the x-y coordinates, which come from your projection. So here, we can check the projection to find our units:
 
 ```{r}
@@ -105,18 +105,35 @@ proj4string(districts)
 The units (`+units=m`) are meters. 
 
 
-## Gotcha 2: byid
+## 2.2: byid
 `byid` is an option on most `rgeos` commands. If `byid=TRUE`, each observation in a Spatial* object is handled separately; if `byid=FALSE`, a Spatial* object is treated as one big geometry. So if one were working with a `SpatialPolygons` object of US states, when `byid=TRUE`, the analysis would be conducted for each state; if `byid=FALSE`, it would essentially run the analysis against the United States as a whole. 
 
-For example, here is the `gArea` with and without `byid=TRUE`. When true, we get an area for each polygon; when false, we get the area of all polygons combined. 
+Intuitively, the distinction can often be thought of as the difference between asking whether about a spatial relationship between *each* observation in the Spatial* object on which the tool is being executed, or *any* observation in the Spatial* polygon. 
+
+To see this illustrated, let's consider our data we used before on the location of government grants. Suppose we want to identify regions that are within 7km of government grants. We could either ask for the area within 7km of *each* government project (which would yield a different answer for each grant), or the area within 7km of *any* government grant (which would yield one large area). You can see this distinction in the following plots:
 
 ```{r}
-gArea(districts, byid=TRUE)
 
-gArea(districts, byid=FALSE)
+buffered.grants.byidTRUE <- gBuffer(grants.newproj, width=7000, byid=TRUE)
+buffered.grants.byidFALSE <- gBuffer(grants.newproj, width=7000, byid=FALSE)
+
+par(mfcol=c(1,2))
+plot(districts, main="byid TRUE")
+plot(buffered.grants.byidTRUE, col='blue', add=T)
+
+plot(districts, main="byid FALSE")
+plot(buffered.grants.byidFALSE, col='blue', add=T)
+
 ```
 
-## Gotcha 3: id
+As seen in the figures, when `byid=TRUE`, a separate buffer polygon is created around each grant, creating a large number of (overlapping) polygons. When `byid=FALSE`, there are no discrete polygons, just a single feature that covers all points within 7km of **any** government grant.  Indeed, if we look at the summary of these buffers, we see this as well -- in the first case, you see that under `features`, the buffers created with `byid=TRUE` have 6 distinct features (observations), while the buffers created with `byid=FALSE` have only 1. 
+
+```{r}
+buffered.grants.byidTRUE
+buffered.grants.byidFALSE
+```
+
+## 2.3: id
 
 The output of almost all `rgeos` commands will be organized by `id`. For example, with `gArea`, each area has a label: 0, 1, and 2. When working with Spatial*DataFrame objects, `id` will be the rowname for a given observation, just like with tools we've worked with before.
 
@@ -137,23 +154,35 @@ buffered.grants <- gBuffer(grants.newproj, width=7000, byid=TRUE)
 names(geometry(buffered.grants))
 
 plot(districts)
-par(new=T)
 plot(buffered.grants, col='blue', add=T)
 ```
 
-Note that points has given rise to a new polygon, many of them overlapping, and they were given simple names based on the names of the points that generated them. However, if we want a polygon of points within 7km of *any* grant, we can pass byid=FALSE`. Now we have one polygon (named `buffer`) instead of 5. 
+Note that points has given rise to a new polygon, many of them overlapping, and they were given simple names based on the names of the points that generated them. However, if we want a polygon of points within 7km of *any* grant, we can pass `byid=FALSE`. Now we have one polygon (named `buffer`) instead of 5. 
 
 ```{r}
 buffered.grants <- gBuffer(grants.newproj, width=7000, byid=FALSE)
 names(geometry(buffered.grants))
 
 plot(districts)
-par(new=T)
 plot(buffered.grants, col='blue', add=T)
 ```
 
 
-# Unusual Tools: Set operations
+***
+
+## Exercise 1
+
+Let's try and figure out what percentage of residents of Pakistans Federally Administered Tribal Areas (FATA, the regions with the most drone strikes) live within 7km of a drone strike. 
+
+#. Subset the pk.dist data for the Province of Fata.
+
+#. Create a buffer of 7km with the `gBuffer` command to help us estimate the total area that is within 7km of *any* drone strike (what value of `byid` should you use?).
+
+#. Plot your buffers over the districts so you can see them.  
+
+***
+
+# 3. Set operations
 
 `rgeos` can also do set operations on polygons, like returning areas in which different polygons coincide, don't coincide.
 
@@ -162,9 +191,7 @@ This can be useful for lots of things. For example, the figure of grant buffers 
 ```{r}
 intersection <- gIntersection(buffered.grants, districts, byid=TRUE)
 plot(districts)
-par(new=T)
 plot(intersection, col='blue', add=T)
-par(new=F)
 ```
 
 Interestingly, note that while `buffered.grants` was previously one feature, because we passed `byid=TRUE`, the intersection with the districts executed the intersection for each congressional district, creating three distinct polygons.
@@ -173,14 +200,64 @@ Interestingly, note that while `buffered.grants` was previously one feature, bec
 intersection
 ```
 
-Moreover, the `id`s assigned to these polygons are just concatenations of the `id`s of `buffered.grants` and `districts`, a pattern that would hold even if `buffered.grants` had fancier names:
+##. 3.1 Managing Output from Set Operations
+
+One challenge with set operations is that the number of features that are generates has no mechanical relationship to the number of features that were passed to the set function. As a result, we can't just use the tricks we used for basic functions like `cbind`ing the results back into the original data frame, because they may be of entirely different lengths. 
+
+`rgeos` tries to address this problem by generating new `id`s for the output of set operations that are somewhat intuitive. In general, new `id`s are concatenations of the `id`s of the objects that gave rise to a new observation. For example, if you ran `gIntersection` and one output polygon was created from the overlap of a polygon with the `id` of `8` from the first Spatial* object passed and a polygon with the `id` `z` from the second Spatial* object, that new polygon would have the `id`: `8 z`. 
+
+
+We can see this behavior in the `id`s of polygons generated from the intersection we just executed between `buffered.grants` and `districts`:
 ```{r}
 names(geometry(buffered.grants))
 names(geometry(districts))
 names(geometry(intersection))
 ```
 
-# Last Word: `byid` Issues
+The challenge with this is that these concatenated `id` variables aren't always easy to merge with the DataFrames of your original Spatial* objects. For example, say we wanted to measure the share of each electoral district that is within 7km of a government grant. To do so, we would want to divide the area within 7km of each grant in each district by the total area of each district. The problem is that if we measure the area within 7km of each grant -- the area of the shapes in the `intersection` object -- we get back a list organized by these concatenated `id`s. 
+
+```{r}
+gArea(intersection, byid=TRUE)
+```
+
+The following code snippet will convert lists like this into a DataFrame, and will split these concatenated `id` variables into two columns -- one for each component of the `id` -- to make merging easier. This is something you chould be able to copy-and-paste after almost any set operation. 
+
+```{r}
+result <- gArea(intersection, byid=TRUE)
+
+# Convert from list to DataFrame
+result <- as.data.frame(result)
+colnames(result) <- c("area_near_grants")
+
+# ids are stored as row-names, so make into a column.
+ids <- as.character(rownames(result))
+
+# Split the id into two columns based on the space in the middle. 
+# Note the one place this could break is if the original names had spaces...
+new.id.columns <- t(as.data.frame(strsplit(ids, " ")))
+colnames(new.id.columns) <- c("id1", "id2")
+
+# Now your results are a data.frame with separate columns for each id component!
+result <- cbind(result, new.id.columns)
+
+```
+
+Now you can use this reformated data to merge with the original data on districts:
+```{r}
+
+# Move the rownames (which form the ids) into a column for merging
+districts@data$id2 <- rownames(districts@data)
+districts@data <- join(districts@data, result, by="id2", type="left")
+```
+
+Now we can calculate the share of each district within 7km!
+
+```{r}
+districts@data$result / districts@data$Shape_Area
+```
+
+
+## 3.2 Last Word: `byid` Issues
 
 One thing to be aware of is that `rgeos` sometimes struggles when `byid` is set to `FALSE`. For example, if we want to clip our buffered polygon by the extent of all electoral districts -- but not add cuts where the polygon crosses the lines between districts -- one might try the following code:
 
@@ -202,26 +279,21 @@ plot(merged.districts)
 intersection2 <- gIntersection(buffered.grants, merged.districts, byid=FALSE)
 intersection2
 plot(districts)
-par(new=T)
 plot(intersection2, col='blue', add=T)
-par(new=F)
 ```
 Now the intersection is only one part!
 
+***
 
-## Exercise 1
+### Exercise 2. 
 
-Let's try and figure out what percentage of residents of Pakistans Federally Administered Tribal Areas (FATA, the regions with the most drone strikes) live within 7km of a drone strike. 
+**Answers below, but no cheating!**
 
-#. Subset the pk.dist data for the Province of Fata.
+Previously we created polygons for areas within 7km of a drone strike. Now let's try and estimate the share of each district in FATA that is within 7km of a drone strike. (Note: districts are the administrative level below provinces. There are 13 districts within the province of FATA.)
 
-#. Create a buffer of 5km around each drone strike with the `gBuffer` command. 
+#. Intersect the buffers with Districts using `gIntersection`. 
 
-#. Intersect this with Districts using `gUnion`. 
-
-#. Measure the share of each district within 1km of a drone strike using the `gArea` command for each district, and for the buffered strikes in each district. 
-
-#. In the last exercise, we measured strikes per capita -- did this number seem high or low? Does this measure of proximity to strikes seem different?
+#. Measure the share of each district within 7km of *any* drone strike using the `gArea` command for each district, and for the buffered strikes in each district. **When you merge the areas of your intersections back in with districts, be sure to look at that table -- why are there missing values? Do you need to worry abou them?**
 
 #. Run this analysis just for strikes in 2012. If you've used ArcGIS before, how would you re-run this analysis in ArcGIS? Would it be easier or harder?
 
@@ -245,20 +317,50 @@ fata$OBJECTID <- NULL # Drop column called objectid -- came from shapefile. Just
 
 # Buffer strikes
 proj4string(strikes) # Check projection units
-strike.buffer <- gBuffer(strikes, width=7000, byid=FALSE, id="")
+strike.buffer <- gBuffer(strikes, width=7000, byid=FALSE)
 strike.buffer.inter <- gIntersection(strike.buffer, fata, byid=TRUE)
+```
+
+**Answers to Exercise 2**
+
+```{r, eval=FALSE}
+
+#######
+# Merge intersection areas with original areas
+#######
 
 # Now to merge back in with Districts based on row numbers
-strike.areas <- as.data.frame(gArea(strike.buffer.inter, byid=TRUE))
-colnames(strike.areas) <- "buffer_area"
-strike.areas$rownumbers <- as.numeric(rownames(strike.areas))
-fata@data$rownumbers <- as.numeric(rownames(fata@data))
+result <- gArea(strike.buffer.inter, byid=TRUE)
 
-fata@data <- join(fata@data, strike.areas, by="rownumbers", type="left")
+# Convert from list to DataFrame
+result <- as.data.frame(result)
+colnames(result) <- c("area_near_strikes")
 
+# ids are stored as row-names, so make into a column.
+ids <- as.character(rownames(result))
+
+# Split the id into two columns based on the space in the middle. 
+# Note the one place this could break is if the original names had spaces...
+new.id.columns <- t(as.data.frame(strsplit(ids, " ")))
+colnames(new.id.columns) <- c("id1", "id2")
+
+# Now your results are a data.frame with separate columns for each id component!
+result <- cbind(result, new.id.columns)
+
+fata@data$id2 <- rownames(fata@data)
+
+fata@data <- join(fata@data, result, by="id2", type="left")
+
+#######
 # Calculate share of area within strike buffer
-fata@data[is.na(fata@data$buffer_area),"buffer_area"]<-0
-fata@data$share_covered <- fata@data$buffer_area / fata@data$Shape_Area
+#######
+
+# Note first that in places where no part of a district was within 7km
+# of a strike, there were no `intersection` polygons. Thus when we 
+# merge our data, we get missing for area near strikes. These need to be zeros. 
+
+fata@data[is.na(fata@data$area_near_strikes),"area_near_strikes"]<-0
+fata@data$share_covered <- fata@data$area_near_strikes / fata@data$Shape_Area
 fata@data$share_covered
 
 # Only for 2012: add: 
@@ -267,3 +369,4 @@ fata@data$share_covered
 
 ```
 
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.

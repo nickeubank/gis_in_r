@@ -1,0 +1,322 @@
+---
+title: "Making maps in R"
+author: "By Nick Eubank, building off excellent tutorials by Claudia Engel"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+
+```{r knitr_init, echo=FALSE, cache=FALSE, message=FALSE, results="hide", warning=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+               cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+
+library(rgeos)
+library(rgdal)
+library(sp)
+library(plyr)
+
+#setwd("~/dropbox/gis_in_r")
+
+```
+
+This tutorial focuses on the two main tools for looking at mapping Spatial* objects -- the basic `plot` command, and the more refined plot command `spplot` from the `sp` library. Note there are also ways to use tools like `ggplot` and `ggmap` (designed to make working with maps in `ggplot` easier),, but in this workshop we'll focus on `plot` and `spplot`.
+
+***
+
+
+Although there are other tools available for more sophisticated applications, most plotting situations can be handled through the use of two functions:
+
+* `plot`: plot shapes associated with Spatial* or Raster objects
+* `spplot`: plot shapes associated with Spatial* objects AND color them based on attributes in a associated DataFrame. 
+
+# 1. plot
+
+The syntax for each should be relatively familiar to anyone used to working with `plot` in other settings -- just pass the sp object to plot! 
+
+```{r}
+palo_alto<-readOGR("RGIS3_Data/palo_alto",'palo_alto')
+plot(palo_alto)
+```
+
+It's also easy to add some basic options using standard `plot` modifiers:
+
+```{r}
+plot(palo_alto, col="red")
+title(main="Palo Alto", sub="By Census Tracts")
+```
+
+When plotting lines, you can also use lots of the basic `plot` options for lines. For example, the `lwd` option will determine the width of lines, and `col` their color. 
+```{r}
+freeways <- readOGR("RGIS3_Data/palo_alto", "palo_alto_freeways")
+par(mfrow=c(1,2))
+plot(freeways,  col="red", bg="blue")
+plot(freeways, lwd=10, col="green")
+```
+
+Points work similarly, with `pch` determining shape and `cex` determining size. [You can find a table of symbol-to-number mappings here](http://www.statmethods.net/advgraphs/parameters.html)
+
+## 1.1 Multiple layers with `plot`
+
+It's also easy to plot multiple layers using `plot` with the `add` option:
+
+```{r}
+stopifnot(proj4string(palo_alto)==proj4string(freeways)) # Check in same projection before combining!
+
+plot(palo_alto)
+plot(freeways, col="blue", add=T)
+```
+
+
+# 2. spplot
+`spplot` is an extension of `plot` specifically for making maps of Spatial* objects. In particular, it's very useful for filling in polygon colors based on attributes in an associated DataFrame (what are called "chloropleth" maps). Just pass an Spatial*DataFrame object and the name of columns you want to plot (if you don't pass specific column names, a separate figure will be created for each column.)
+
+Note the `col="transparent"` option just supresses the plotting of polygon borders for a slightly better ascetic. 
+
+
+```{r}
+spplot(palo_alto, "PrCpInc", main="Palo Alto Demographics", sub="Average Per Capita Income", col="transparent")
+```
+
+[A big list of example graphs with associated code can be found here](http://rspatial.r-forge.r-project.org/gallery/)
+
+[Another guide is here](https://sites.google.com/site/spatialr/plottingmaps)
+
+## 2.1 Controlling Colors
+
+### Custom Palettes for `spplot`
+
+If you don't like the default color scheme, you can use your own with ColorBrewer, which you can install with `install.packages("RColorBrewer")`. Once loaded, you can see a list of all the color pallets that come with `RColorBrewer` with the command:
+
+```{r}
+library(RColorBrewer)
+display.brewer.all()
+```
+
+Once you've picked a palette you like, create a palette object as follows, where `n` is the number of cuts you want to use, and `name` is the name of the color ramp. Note that different palettes have different limits on the maximium and minimium number of cuts allowed. 
+```{r}
+my.palette <- brewer.pal(n = 7, name = "OrRd")
+```
+
+Then you can just pass this pallet to `spplot`, making sure to set the number of cuts to **1 minus the number of colors**. 
+```{r}
+spplot(palo_alto, "PrCpInc", col.regions = my.palette, cuts=6, col="transparent")
+```
+
+### Controlling Color Breaks
+If you don't want evenly spaced cutoffs between colors, you can use the `classInt` library to make custom cuts. 
+
+```{r, warning=FALSE}
+library(classInt)
+
+breaks.qt <- classIntervals(palo_alto$PrCpInc, n = 6, style = "quantile")
+
+
+# Tweak just a little to get top value inside interval and make a simple list. 
+br <- breaks.qt$brks
+offs <- 1e-07
+br[1] <- br[1] - offs
+br[length(br)] <- br[length(br)] + offs
+
+
+spplot(palo_alto, "PrCpInc", col="transparent", col.regions = my.palette, at=br)
+
+```
+
+
+*** 
+
+### Exercise 1
+
+#. Pick a city to plot. Three cities are included in RGIS3_Data, or find your own. 
+
+#. Read-in the city polygons. 
+
+#. Use `spplot` to plot average incomes for your city with default colors. 
+
+#. Now use RColorBrewer to map income using a custom color scheme. 
+
+#. Use the `classInt` library to cut income by quantiles rather than even intervals. 
+
+***
+
+
+
+## 2.2 Multiple layers with `spplot`
+`spplot` allows users to add multiple layers or symbols using the `sp.layout` argument. To use `sp.layout`, you first create a new list where:
+
+* the first item is the type of layer to add, 
+* the second argument is the actual object to plot, 
+* and any following items are plotting options. 
+
+You then pass this list to the `sp.layout` argument. For example, if I wanted to overlay the buffered grant locations on electoral districts, I would use the following codes:
+
+```{r}
+# Create a layer-list
+freeway.layer <- list("sp.lines", freeways, col="green")
+
+# Plot with layer-list passed to `sp.layout`
+spplot(palo_alto, "PrCpInc",
+       sp.layout = freeway.layer, col="transparent")
+```
+
+If you want to add multiple layers, just combine the layer-lists as follows. Note that order of items in the list will determine plotting order! Here's an example where I plot freeways twice so I can get a different color scheme. 
+
+```{r}
+# Create a layer-list
+freeway.layer <- list("sp.lines", freeways, col="green", lwd=10)
+freeway2.layer <- list("sp.lines", freeways, col="red", lwd=2)
+
+
+# Plot with layer-list passed to `sp.layout`
+spplot(palo_alto, "PrCpInc", 
+       sp.layout = list(freeway.layer,freeway2.layer),
+       col="transparent")
+```
+
+### Accoutrements 
+You can also use the `sp.layout` option to add other things, like compass arrows or scales. In most cases, the key to this is to set "offset", which defines the location of the bottom left hand corner of what you're working with. Getting offsets right will kinda drive you crazy. 
+
+Here's a small handfull:
+
+```{r}
+
+palo_alto_proj <- spTransform(palo_alto, CRS("+init=EPSG:32611")) # Can't make a scale if not projected!
+palo_alto_proj@bbox # Check dimensions to help guide offset choices
+
+
+scale = list("SpatialPolygonsRescale", layout.scale.bar(), scale = 25000, fill=c("transparent","black"), offset = c(41000, 4100000))
+
+# The scale argument sets length of bar in map units
+text1 = list("sp.text", c(41000, 4104000), "0")
+text2 = list("sp.text", c(66000, 4104000), "25 km")
+
+arrow = list("SpatialPolygonsRescale", layout.north.arrow(), 
+  offset = c(90000,4150000), scale = 5000)
+
+
+spplot(palo_alto_proj, "PrCpInc", 
+       sp.layout = list(scale, text1, text2, arrow))
+```
+
+***
+
+### Exercise 2
+
+#. Using the same city data you used for Exercise 1, overlay the freeway shapefile over your city. Make the freeways red. 
+
+#. Add a compass somewhere reasonable on the map. 
+
+#. BONUS: Add a scale bar. 
+
+***
+
+# 3. Dot-Density Plots
+
+Dot-Density plots are a favorite these days, and they can be made relatively easily with the use of `spplot` and the `dotsInPolys` tool from the `maptools` library. Not much to explain here, so here's just an example of making a dot-density plot for Santa Clara county from census polygons!
+
+
+```{r}
+library(maptools)
+
+# Get census polygons
+census <- readOGR("RGIS3_data/palo_alto", "palo_alto")
+
+# Get feel for data with white population (largest group)
+spplot(census, "White")
+
+
+# Setting a seed is a good idea -- since points are random, it's helpful for replication to make sure this code will always make the same result. 
+set.seed(47)
+
+# Create a fixed number of points at random locations within each polygon based on a polygon variable. 
+# Since the field values here are the number of people, we can get one dot per 300 people as follows:
+people.per.dot = 300
+
+dots.w <- dotsInPolys(census, as.integer(census$White/people.per.dot)) 
+dots.w$ethnicity <-"White" 
+
+dots.h <- dotsInPolys(census, as.integer(census$hispanc/people.per.dot)) 
+dots.h$ethnicity <-"hispanc" 
+
+# Gather all the dots into a single SpatialPoints
+dots.all <- rbind(dots.w, dots.h) 
+
+
+# Since ethnicity is a string, order is alphabetical. You can change if you want by making these categoricals!
+my.palette <- c("red", "blue")
+point.size <- 0.5
+
+# Make sp.layout list for the actually boundaries
+census.tract.layer <- list("sp.polygons", census)
+
+spplot(dots.all, "ethnicity", sp.layout=census.tract.layer, col.regions=my.palette, cex = point.size,
+       main="Demographic Distribution of Santa Clara County")
+
+```
+
+***
+
+### Exercise 3
+
+#. Make a dot-density plot for your own city!
+
+#. Change the number of people per dot and the size of dots. 
+
+#. Overlay your freeway data. How do freeways affect segregation?
+
+***
+
+# 4. A final note on ggplot
+
+The `ggplot` library is a popular graphing library, and it can be used for mapping spatial data. The main trick is that `ggplot` will only accept DataFrames as inputs, so you have to first convert your spatial data into DataFrames using the `fortify` command from the `ggplot2` library. 
+
+I am not a frequent `ggplot` user, so I'll just include some workable code (taken almost verbatum from Claudia Engel's excellent tutorials) as guidance to interested parties.  
+
+```{r}
+library(ggplot2)
+
+# create a unique ID for the later join
+palo_alto@data$id = rownames(palo_alto@data)
+
+# turn SpatialPolygonsDataframe into a data frame
+# (note that the rgeos library is required to use fortify)
+
+palo_alto.pts <- fortify(palo_alto, region="id") #this only has the coordinates
+palo_alto.df <- join(palo_alto.pts, palo_alto@data, by="id", type='left') # add the attributes back 
+
+
+# calculate even breaks breaks
+palo_alto.df$qt <- cut(palo_alto.df$PrCpInc, 5)
+
+
+# plot  
+ggplot(palo_alto.df, aes(long,lat,group=group, fill=qt)) + # the data
+  geom_polygon() + # make polygons
+  scale_fill_brewer("Per Cap Income", palette = "OrRd") + # fill with brewer colors
+  theme(line = element_blank(),  # remove the background, tickmarks, etc
+        axis.text=element_blank(),
+        axis.title=element_blank(),
+        panel.background = element_blank()) +
+  coord_equal()
+
+```
+
+
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.

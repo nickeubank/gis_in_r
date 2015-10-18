@@ -40,3 +40,6 @@ install.packages(c("ggplot2","hexbin","ggmap","RColorBrewer", "XML", "dplyr"))
 Plus, as before, `sp` and `rgdal`. 
 
 R comes wiht a basic `plot` command, which can also be used for simple map viewing. In this workshop we will will look into two different options to map spatial data in R. `sp` comes with a more refined plot command `spplot`, which takes `Spatial*~` objects. Secondly, there is `ggplot`, a more general purpose plotting library, but very powerful and one can make great maps. An additional package `ggmap` builds on `ggplot` and allows to draw in tiled basemaps from different services.
+
+
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.

@@ -1,6 +1,6 @@
 ---
 title: "Spatial Data in R: Vector Data"
-author: "Nick Eubank, building off excellent tutorials by Claudia Engel"
+author: "By Nick Eubank, building off excellent tutorials by Claudia Engel"
 output:
   html_document:
     toc: true
@@ -11,7 +11,7 @@ output:
     fig_height: 6
 ---
 
-```{r, knitr_init, echo=FALSE, results='hide', cache=FALSE,message=FALSE}
+```{r, knitr_init, echo=FALSE, results='hide', cache=FALSE,message=FALSE, warning=FALSE}
 library(knitr)
 #library(rmdformats)
 
@@ -388,6 +388,6 @@ proj4string(mapDF) <- CRS('+init=EPSG:4326')
 spplot(mapDF)
 ```
 
-
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
 
     
