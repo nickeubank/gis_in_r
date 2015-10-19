@@ -108,21 +108,19 @@ However, these can be a little hard to work with. With that in mind, the followi
 ```{r}
 
 # Change these parameters
-zoom = 0.8    # Zoom paramter. less than 1 is zooming in. 
-xshift = 0    # Shift to right in map units. 
-yshift = 0    # Shift to left in map units. 
+scale.parameter = 0.5    # scaling paramter. less than 1 is zooming in, more than 1 zooming out. 
+xshift = -0.1    # Shift to right in map units. 
+yshift = 0.2  # Shift to left in map units. 
 original.bbox = palo_alto@bbox    # Pass bbox of your Spatial* Object. 
 
 # Just copy-paste the following
 edges = original.bbox
-edges[1,1] = original.bbox[1,1] + (original.bbox[1,2]-original.bbox[1,1])*(1-zoom) + xshift
-edges[1,2] = original.bbox[1,2] - (original.bbox[1,2]-original.bbox[1,1])*(1-zoom) + xshift
 
-edges[2,1] = original.bbox[2,1] + (original.bbox[2,2]-original.bbox[2,1])*(1-zoom) + yshift
-edges[2,2] = original.bbox[2,2] - (original.bbox[2,2]-original.bbox[2,1])*(1-zoom) + yshift
+edges[1, ] <- (edges[1, ] - mean(edges[1, ])) * scale.parameter + mean(edges[1, ]) + xshift
+edges[2, ] <- (edges[2, ] - mean(edges[2, ])) * scale.parameter + mean(edges[2, ]) + yshift
+
 
 # In `spplot`, set xlim to edges[1,] and ylim to edges[2,]
-
 spplot(palo_alto, "PrCpInc", main="Palo Alto Demographics", sub="Average Per Capita Income", col="transparent", xlim = edges[1,], ylim=edges[2,])
 ```
 
@@ -153,17 +151,9 @@ If you don't want evenly spaced cutoffs between colors, you can use the `classIn
 ```{r, warning=FALSE}
 library(classInt)
 
-breaks.qt <- classIntervals(palo_alto$PrCpInc, n = 6, style = "quantile")
+breaks.qt <- classIntervals(palo_alto$PrCpInc, n = 6, style = "quantile", intervalClosure="right")
 
-
-# Tweak just a little to get top value inside interval and make a simple list. 
-br <- breaks.qt$brks
-offs <- 1e-07
-br[1] <- br[1] - offs
-br[length(br)] <- br[length(br)] + offs
-
-
-spplot(palo_alto, "PrCpInc", col="transparent", col.regions = my.palette, at=br)
+spplot(palo_alto, "PrCpInc", col="transparent", col.regions = my.palette, at=breaks.qt$brks)
 
 ```
 
@@ -311,7 +301,7 @@ spplot(dots.all, "ethnicity", sp.layout=census.tract.layer, col.regions=my.palet
 
 ***
 
-# 4. A final note on ggplot
+# 4. A final note on ggplot and ggmap
 
 The `ggplot` library is a popular graphing library, and it can be used for mapping spatial data. The main trick is that `ggplot` will only accept DataFrames as inputs, so you have to first convert your spatial data into DataFrames using the `fortify` command from the `ggplot2` library. 
 
@@ -346,5 +336,8 @@ ggplot(palo_alto.df, aes(long,lat,group=group, fill=qt)) + # the data
 
 ```
 
+## 4.1 ggmap
+
+A big advantage to using `ggplot` for mapping is the `ggmap` library, which allows you to add basemaps from internet sources. 
 
 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
