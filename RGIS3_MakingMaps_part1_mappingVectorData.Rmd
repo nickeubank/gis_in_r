@@ -275,11 +275,15 @@ dots.h$ethnicity <-"Hispanic"
 
 # Gather all the dots into a single SpatialPoints
 dots.all <- rbind(dots.w, dots.h) 
-projection(dots.all) <- CRS(proj4string(palo_alto))
+proj4string(dots.all) <- CRS(proj4string(palo_alto))
 
 # Since ethnicity is a string, order is alphabetical. You can change if you want by making these categoricals!
 my.palette <- c("red", "blue")
 point.size <- 0.5
+
+# Make sure stored as a factor 
+dots.all@data$ethnicity <- as.factor(dots.all@data$ethnicity)
+
 
 # Make sp.layout list for the actually boundaries
 census.tract.layer <- list("sp.polygons", census)
@@ -333,7 +337,62 @@ plot(reprojected.palo_alto, add=T, border="red", col="transparent")
 
 ## 4.2 Basemaps with spplot
 
-I cannot, for the life of me, figure out how to plot **accurate** basemaps with spplot. [There are methods that will place approximate basemaps under your spplots](http://www.r-bloggers.com/stamen-maps-with-spplot/), but these methods treat the basemaps as being in a WGS84 projection, which they are not -- the maps they query are in WGS84 Web Mercator, which is similar but different. [As a result, the outputs are not terrible, but are definitely **wrong**, as discussed in more detail here.](http://rstudio-pubs-static.s3.amazonaws.com/16660_7d1ab1b355344578bbacb0747fd485c8.html)
+Unfortunately, adding a basemap to an `spplot` is much more complicated for a few reasons. Most of the code below can just be copy-pasted to make basemaps. 
+
+The reason -- for those of you who are interested -- is that the library that creates basemaps in a format that work with `spplot` wants to know about the bounds of the figure in latitude and longitude. The problem is that the projection these basemaps use does not use latitude and longitude as it's native coordinates. Thus you have to convert your image into the right projection (WGS84 Web Mercator), find the dimensions of your plot in those units, pass some of those back to the basemap function as longitudes and latitudes, then tell spplot what the dimensions of the basemap are in the WGS84 Web Mercator units. [If you don't do this, you'll get this problem.](http://rstudio-pubs-static.s3.amazonaws.com/16660_7d1ab1b355344578bbacb0747fd485c8.html)
+
+```{r}
+
+# REPROJECT YOUR DATA TO EPSG 3857
+to.plot.web.merc <- spTransform(dots.all, CRS("+init=EPSG:3857"))
+
+
+# COPY AND PASTE SEGEMENT 1
+# Series of weird conversions to deal with inconsistencies in units for API. 
+box <- to.plot.web.merc@bbox
+
+midpoint <- c(mean(box[1,]), mean(box[2,]))
+left.bottom <- c(box[1,1], box[2,1])
+top.right <- c(box[1,2], box[2,2])
+
+boundaries <- SpatialPoints(rbind(left.bottom, top.right))
+proj4string(boundaries) <- CRS("+init=EPSG:3857")
+boundaries.latlong <- c(t(spTransform(boundaries, CRS("+init=EPSG:4326"))@coords))
+
+# END COPY-PASTE SEGMENT 1
+
+
+# SET MAP TYPE HERE, LEAVE OTHER PARAMETERS AS THEY ARE
+gmap <- get_map(boundaries.latlong, maptype = "terrain", source = "stamen", crop = TRUE)
+
+# COPY-PASTE SEGMENT 2
+# Create object that sp.layout likes. 
+long.center <- midpoint[1]
+lat.center <- midpoint[2]
+height <- box[2,2] - box[2,1]
+width <- box[1,2] - box[1,1]
+
+sp.raster <- list("grid.raster", gmap, x = long.center, y = lat.center, width = width, 
+    height = height, default.units = "native", first = TRUE)
+# END COPY-PASTE SEGMENT 2
+
+
+# NORMAL PLOTTING TRICKS - HAVE FUN HERE!
+
+# Housecleaning and set colors
+to.plot.web.merc@data$ethnicity <- as.factor(to.plot.web.merc@data$ethnicity)
+
+my.palette <- c("red", "blue")
+point.size <- 0.5
+
+# Plot!
+
+spplot(to.plot.web.merc, "ethnicity", sp.layout = sp.raster, col.regions=my.palette, cex = point.size,
+       main="Demographic Distribution of Santa Clara County")
+
+
+
+```
 
 
 ***
@@ -341,6 +400,8 @@ I cannot, for the life of me, figure out how to plot **accurate** basemaps with 
 ## Exercise 4
 
 #. Plot the census tracts of your city over a base-map using the `plot` command. 
+
+#. Plot your demographic dot-plot with a basemap using the `spplot` command.
 
 ***
 
