@@ -52,7 +52,7 @@ Most geometric operations -- like creating buffers, creating geometric intersect
 
 Installation of the `rgeos` library on Macs can be a little tricky -- as of September 2015, `install.packages("rgeos")` will not work on macs (though hopefully this will change soon?). In the meantime, most people find the following directions works: 
 
-* 1. Make sure you have downloaded and installed the [GDAL Complete}(http://www.kyngchaos.com/files/software/frameworks/GDAL_Complete-1.11.dmg) library from `RGIS1`.
+* 1. Make sure you have downloaded and installed the [GDAL Complete](http://www.kyngchaos.com/files/software/frameworks/GDAL_Complete-1.11.dmg) library from `RGIS1`.
 * 2. Run the following command:
 ```{r, eval=FALSE}
 install.packages("rgeos", type = "source", configure.args ="--with-geos-config=/Library/Frameworks/GEOS.framework/Versions/Current/unix/bin/geos-config")

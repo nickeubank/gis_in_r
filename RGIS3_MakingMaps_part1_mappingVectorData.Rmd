@@ -343,6 +343,7 @@ The reason -- for those of you who are interested -- is that the library that cr
 
 ```{r}
 
+library(ggmap)
 # REPROJECT YOUR DATA TO EPSG 3857
 to.plot.web.merc <- spTransform(dots.all, CRS("+init=EPSG:3857"))
 

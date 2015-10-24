@@ -67,13 +67,11 @@ __On Mac:__
 
 3. Make sure you have R Version 3.2.2 installed -- if not update it.
 
-4. Download [rgdal](http://www.kyngchaos.com/files/software/frameworks/rgdal-0.9.1-1.dmg)  
+4. Download the [rgdal](https://cran.r-project.org/bin/macosx/mavericks/contrib/3.2/rgdal_1.0-4.tgz) package from CRAN.
 
-5. Doubleclick to open the `.dmg` file
+5. Place the downloaded `rgdal_1.0-4.tgz` in your Desktop folder
 
-6. Move `rgdal_0.9-1.tgz` to your Desktop folder
-
-7. `install.packages("~/Desktop/rgdal_0.9-1.tgz", repos=NULL)`
+7. Run `install.packages("~/Desktop/rgdal1.0-4.tgz", repos=NULL)`
 
 8. Install `raster` and `sp` by running: `install.packages(c("sp","raster"))`
 
