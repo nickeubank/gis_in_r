@@ -1,5 +1,5 @@
 ---
-title: "Web APIs"
+title: "Web APIs and the Basics of Getting Internet Data"
 author: "Nick Eubank"
 output:
   html_document:
@@ -40,7 +40,7 @@ This tutorial also provides some background in the hopes of demystifying the API
 
 # 1. Demystification
 
-It's no wonder most people think of APIs as a little mysterious and daunting. Ask most people what an API is and they will either give you a blank stare or say "why an Application Programming Interface, of course." To convert the latter to the former, you can usually just follow-up you question with "but what's an Application Programming Interface?"
+It's no wonder most people think of APIs as a little mysterious and daunting. Ask most people what an API is and they will either give you a blank stare or say "why an Application Programming Interface, of course." And you can usually stump the person who said "an Application Programming Interface" by following-up your question with "but what's an Application Programming Interface?"
 
 This section provides an overview of APIs in general and Web APIs in particular. This is probably a little more background than is necessary for most purposes, but I have found that people tend to shy away from using APIs because they seem mysterious, and I'd like to help fight that conception. The idea of an API is actually to make your life simpler, and the concept of an API can be very powerful for understanding the modern world. 
 
@@ -48,7 +48,7 @@ This section provides an overview of APIs in general and Web APIs in particular.
 
 API is an (uninformative) acronym for "Application Programming Interface". 
 
-It is often the case that a user working in one programming environment (like R) would like to take advantage of tools written in a different language. The goal of an API is to facilite this by acting like as a cross between a translator and a messenger between two different programs.
+It is often the case that a user working in one programming environment (like R) would like to take advantage of tools written in a different language. The goal of an API is to facilitate this by acting like as a cross between a translator and a messenger between two different programs.
 
 Let's us an example of an API that you are already quite familiar with, even if you didn't realize it. The `rgeos` library from the RGIS2 tutorial is actually just an API for a program called GEOS written in a language called C++. When people started realizing that they wanted to do GIS analysis in R, the realized that it didn't make sense to write a whole new set of tools in R for geometric operations when there was already a really sophisticated program written for this exact purpose. At the same time, however, they didn't want to require R users to export their data to the harddrive, open a different program in a language they might not know, use that program to execute a calculation, then re-import the data. 
 
@@ -62,7 +62,7 @@ In steps the API, `rgeos`. When you use `rgeos`, here's what's really happening:
 
 That's it. It's just a middle man who "speaks" both R and GEOS, and who's willing to run back and forth between these programs to make your life easier!
 
-
+(Wanna know a secret? Most good libraries in R are actually just APIs for libraries written in C++!)
 
 ## 1.2 What is a Web API?
 
@@ -80,7 +80,7 @@ With a Web API, we skip the step where a user clicks a button in the browser wit
 
 There are a couple specific components of most URLs, and understanding these components will be helpful for both web APIs, and in other situations like web-scraping. For example, consider the following link to a youtube video: [https://www.youtube.com/watch?v=dQw4w9WgXcQ](https://www.youtube.com/watch?v=dQw4w9WgXcQ).
 
-* **https** : This is the language you're saying you want to use to talk to the server. 
+* **https** : This is the protocol you're saying you want to use to talk to the server. 
 * **www.youtube.com** : This is the server you want to pass your message to. 
 * **/watch** : is how you tell the computer the general type of request you're making (in this case, you want to go directly to a video). 
 * **?v=dQw4w9WgXcQ** : this is what's called a "Query String". 
@@ -109,20 +109,173 @@ So, to recap:
 * **What is an API?** A tool that allows a user of one program to easily use a different program potentially in a different language. 
 * **What is a Web API?** A tool that allows users to make requests for data over the internet through carefully formatted URLs and to get responses that are easy to use, regardless of the system being used to actually manage that data on the server. 
 
+***
 
-# 2. Google Maps Geocoding API
+# 2. Querying an API
+
+As noted above, querying an API is the same as openning a website with a specific URL. For example, you can see the results of querying the google geocoding API by just typing the following link into your browser: `https://maps.googleapis.com/maps/api/geocode/json?address=1600+pennsylvania+avenue,+washington+dc`
+
+This can actually very helpful for debugging, but in practice we want to query URLs from inside R. To do this, we use the `RCurl` library. 
+
+```{r}
+library(RCurl)
+
+url = "https://maps.googleapis.com/maps/api/geocode/json?address=1600+pennsylvania+avenue,+washington+dc"
+result <- getURL(url)
+
+# Get first 100 characters so don't print too much
+short.results <- substring(result, 1, 400)
+cat(short.results)   
+```
+Note the use of `cat` to print the result -- `getURL` will encode things like new-lines as `\n` which the normal print command won't recognize. 
+
+***
+
+
+# 3. Parsing the Results
+
+Congratulations! You know how to load a webpage in R! Now the only problem is you have no idea how to read the result. 
+
+
+## 3.1 JSON
+
+Increasingly, the most common format for web APIs is what is called JSON. JSON's popularity is due in large part to it's flexibility, although as we will see this is a double edged sword. 
+
+There are two main data structures in JSON: named lists and unnamed lists (technically called Arrays). 
+
+Here's a **named list** with two items named "school name" and "school mascot":
+
+```
+{"school name": "stanford", "school mascot": "cardinal"}
+```
+
+Note the curly brackets and colons between names and values. 
+
+Here's an **unnamed list** with two items:
+
+```
+["stanford", "cardinal"]
+```
+
+Note the square brackets. 
+
+The most important thing about these structures is that they can be nested in one another. For example, either of the following are valid JSON objects:
+
+```
+{"school names":["stanford", "berkeley"], "school mascots":["cardinal", "bears"]}
+
+# Or
+
+[
+	{"school name": "stanford", "school mascot": "cardinal"},
+	{"school name": "berkeley", "school mascot": "bears"}
+]
+
+```
+
+That makes JSON format what is called a **recursive** data structure, meaning that an entry in a JSON list can itself be a JSON list. This is fundamentally different from almost every data structure in R, and likely most data structures you've thought about. One cannot place a vector in a vector in R, a matrix in a matrix, or a DataFrame in a DataFrame. One also can't put an excel table inside the cell of an excel table, or a .csv inside an entry in a .csv. Indeed, the only structure in R that is analogous to this is a `list`, which most R users tend to not use very much. 
+
+### Converting JSON formats
+
+Since we are most used to working with data frames and vectors, there's a library that tries to wrangle JSON files into traditional R formats called `jsonlite`. However, it is important to know that it can only do so much -- if you have a JSON with lists nested in lists forever, it can be very hard to convert that structure into a DataFrame!
+
+jsonlite's goal is basically to:
+
+* convert unnamed lists of named lists into DataFrames,
+* and unnamed arrays into vectors, 
+
+defaulting to using lists when it has no choice. 
+
+
+```{r}
+library(jsonlite)
+
+# A simple example. Note that "state" only exists in second item, so becomes NA in output. 
+example.json <- '[
+	{"school name": "stanford", "school mascot": "cardinal"},
+		{"school name": "berkeley", "school mascot": "bears", "State":"CA"}
+	]'
+fromJSON(example.json)
+```
+
+```{r}
+# Not a very successful conversion...
+example.json2 <- '{"school names":["stanford", "berkeley"], "school mascots":["cardinal", "bears"]}'
+fromJSON(example.json2)
+```
+
+To make this kind of query in R, we'll use the `fromJSON` command in the `jsonlite` library to make the query and convert the result into a more straightforward R format. We'll talk more about JSON file formats below, but here we see that fromJSON converts the results to a DataFrame (actually, a list with one DataFrame called "results" and a simple vector called "status", but we only really care about the former). 
+
+
+In addition, we can use these tools to geocode a huge number of places from a DataFrame. Considering the following toy-data:
+
+
+```{r}
+library(dplyr)
+toy.data <- data.frame(addresses=c("denver, CO","881 7th Ave, New York, NY 10019", "Encina Hall, 616 Serra St, Stanford, CA 94305"))
+
+my.geocoder <- function(address){
+  address.no.spaces <- gsub(" ", "+", address)
+  url = paste0("https://maps.googleapis.com/maps/api/geocode/json?address=", address.no.spaces)
+  print(url)
+  fromJSON(url)$results
+}
+
+apply(toy.data, 1, my.geocoder)
+
+```
+
+
+
+## 2.2 GeoJSON
+
+## 2.3 XML
+
+
+
+# 3. Specific APIs
+
+## 3.1 Google Maps Geo-Coder
 
 One of the most commonly used APIs for GIS work is the google maps geocoding API. Google maps takes any type of query you would type into Google Maps and returns information on Google's best guess for the latitude and longitude associated with your query. 
 
-Although the google geocoding API operates by responding to specially crafted URLs with nicely formatted outputs, it turns out that someone has already written an API to the API (!) that will take an address, convert it to a URL, submit it to google, and process the result into an R DataFrame!
-
 ```{r}
 library(ggmap)
-geocode("1600 Pennsylvania NW, Washington, DC", source="google", output = "more")
+
+addresses <- c("1600 Pennsylvania NW, Washington, DC", "denver, co")
+
+locations <- geocode(addresses, source="google", output = "more")
+locations
 ```
 
-# 3. US Census API
 
+### Quality
+
+One of the most important fields in the results you get from the google geo-coder is called "geometry.location_type" -- this tells you how precise google's guess is. In order of precision, [the possible values for this field are](https://developers.google.com/maps/documentation/geocoding/intro#results):
+
+* "ROOFTOP" indicates that the returned result is a precise geocode for which we have location information accurate down to street address precision.
+* "RANGE_INTERPOLATED" indicates that the returned result reflects an approximation (usually on a road) interpolated between two precise points (such as intersections). Interpolated results are generally returned when rooftop geocodes are unavailable for a street address.
+* "GEOMETRIC_CENTER" indicates that the returned result is the geometric center of a result such as a polyline (for example, a street) or polygon (region).
+* "APPROXIMATE" indicates that the returned result is approximate.
+
+
+
+## 2.2 US Census Shapefile API
+
+Kyle Walker and Bob Rudis have recently published an API that makes downloading shapefiles from the census agency incredibly easy. [A full description of their library is here](http://rpubs.com/walkerke/tigris01), but here's a short overview. 
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
+library(tigris)
+library(sp)
+
+# Get census tracts with tracts
+dfw <- tracts(state = 'TX', county = c('Dallas', 'Tarrant'))
+
+# Counties with counties. While not always available, they can be found for many places at either 5 meter resolution 20 meter resolution. 
+
+texas <- counties(state = 'TX', cb = TRUE, resolution = '20m')
+
+```
 
 
 

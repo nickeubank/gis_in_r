@@ -1,0 +1,58 @@
+---
+title: "Web APIs and the Basics of Getting Internet Data"
+author: "Nick Eubank"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+
+```{r knitr_init, echo=FALSE, cache=FALSE, message=FALSE,results="hide"}
+library(knitr)
+library(rmdformats)
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+
+
+```
+
+***
+
+This tutorial introduces the idea of a Web API -- a special way of getting information from services like google maps or twitter. Web APIs are often useful in GIS analysis for a number of tasks, like converting street addresses or town names into latitudes and longitudes, or downloading census data from R.  
+
+This tutorial also provides some background in the hopes of demystifying the API, whose name suggests a sophisticated tool that those with limited programming experience may find daunting, but which are often just stripped down versions of the web-pages you are used to using. 
+
+***
+
+
+
+
+```{r}
+library(ggmap)
+geocode(c("1600 Pennsylvania NW, Washington, DC", "denver, co"), source="google", output = "more")
+```
+
+## 2.2 US Census API
+
+
+
+# 3. Web-Formats
+
+OK, so what is JSON?
+
+
+
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.

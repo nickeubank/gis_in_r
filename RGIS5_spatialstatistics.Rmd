@@ -1,0 +1,196 @@
+---
+title: "Spatial Statistics and Surface Interpolations"
+author: "Nick Eubank"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+
+```{r knitr_init, echo=FALSE, cache=FALSE, message=FALSE,results="hide"}
+library(knitr)
+library(rmdformats)
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+
+
+```
+
+***
+
+This tutorial provides an overview of the various libraries that contain tools for calculating spatial statistics. However, be aware that the focus of this tutorial is on finding the libraries that implement these different statistics, not on defining them or discussing their substantive interpretation. It is strongly recommended that users familiarize themselves with spatial statistical methods from another source before jumping to this tutorial. 
+
+***
+
+The first thing to know about libraries for spatial statistics is that there are *lots* of them, and there is also a lot of redundancy across libraries. In this tutorial, I will focus on a small subset of these libraries that seem to be the most well-established and comprehensive, but if you find you are missing something, additional resources abound. 
+
+
+# 1. `spatstat` for Spatial Point Patterns
+
+The best library for studying the statistical properties of point distributions is probably `spatstat`, which also comes with a [companion textbook](https://www.crcpress.com/Spatial-Point-Patterns-Methodology-and-Applications-with-R/Baddeley-Rubak-Turner/9781482210200), [website](http://spatstat.github.io/), and [a set of tutorials](click the "Vignette" links)](https://cran.r-project.org/web/packages/spatstat/). `spatstat` has also been around for a long time, has been widely used, and repeatedly updated, suggesting most bugs are likely to have been found and patched (which is not always the case for R packages).
+
+Here are a few commonly used methods:
+
+* `Kest()`: Ripley's K test
+* `Kest.fft()`: Fast Ripley's K test for large data sets. 
+* `nndist()`: nearest neighbor distances
+* `density.ppp()`: Kernel density plots
+
+
+## 1.1 Using spatstat with Spatial* Objects
+
+`spatstat` is not directly compatible with the `sp` library, so to use `spatstat` we need to do a quick conversion:
+
+```{r}
+library(rgdal)
+library(spatstat)
+sf <- readOGR("rgis5_data/sfpd_incident_shapefile", "sfpd_incident_2015")
+
+# Syntax is: ppp(x.coordinates, y.coordinates, x.range, y.range)
+ss.object <- ppp(sf@coords[,"coords.x1"], sf@coords[,"coords.x2"], sf@bbox[1,],sf@bbox[2,])
+
+# Do Kest! Note there are lots of versions of kest...
+plot(Kest(ss.object, correction="good"))
+```
+
+
+# 2. `spdep` for Spatial Econometrics
+
+`spatstat` only works with points. If you wish to analyze spatial correlation of polygons, `spdep` can be very helpful. 
+A primary author of `spdep` is Roger Bivand, who also wrote the `sp` library, so unlike `spatstats`, `spdep` plays very well with `sp` objects!
+
+* `moran`: global moran's I
+* `localmoran`: local moran's I
+
+## 2.1 Installing `spatstat`
+
+If `install.packages("spatstat")` does not work for you: 
+
+#. Visit the [CRAN spatstat site](https://cran.r-project.org/web/packages/spatstat/index.html)
+
+#. In the "downloads" section, download the r-release *binaries* file associated with your operating system. 
+
+#. Set your working directory to wherever you placed the downloaded file. 
+
+#. Run `install.packages("spatstat_1.43-0.zip", repos=NULL)` (updating the file name to the most recent version and appropriate suffix)
+
+Hopefully you're set to go!
+
+## 2.2 Neighbor lists and Spatial weights
+
+We generally creating spatial weighting matrices in two steps: 
+
+#. Create a "neighbor list" (`nb` object)
+#. Convert it to a spatial weighting matrix (`listw` object)
+
+An `nb` object just records which features are "neighbors" of one another (you either are or are not a neighbor). The function allows users to specify the  A `listw` is a full, normalized weighting matrix. In most cases, you start by making an `nb` object then convert it to a `listw` using the `nb2listw` command. Details of methods not shown below -- [like graph distance or *k* nearest neighbor methods can be found here](https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf). 
+
+
+```{r}
+library(spdep)
+library(rgdal)
+pa <- readOGR("rgis5_data/palo_alto_demographic_shapefile", "palo_alto")
+pa$share.hispanic <- pa$hispanc / (pa$hispanc + pa$White)
+plot(pa)
+
+# Make continuity NB (neighbors share edges)
+continuity.nb <- poly2nb(pa, queen=FALSE)
+
+  # Plot neighbors
+  plot(continuity.nb, coordinates(pa))
+
+  # Convert to weights and summarize
+  continuity.listw <- nb2listw(continuity.nb)
+  summary(continuity.listw)
+
+# Make continuity NB (neighbors share at least one vertex)
+continuity.plus.vertex.nb <- poly2nb(pa, queen=TRUE)
+continuity.plus.vertex.listw <- nb2listw(continuity.plus.vertex.nb)
+
+# Make all polygons farther than d1 and closer than d2 neighbors
+  # Convert polygons to centroids
+  library(rgeos)
+  pa.in.utm <- spTransform(pa, CRS("+init=EPSG:32610"))
+  pa.centroids = gCentroid(pa.in.utm,byid=TRUE)
+
+  # Neighbors within 10 km
+  intermediate <- dnearneigh(pa.centroids, d1=0, d2=10000)
+  listw.10km <- nb2listw(intermediate)
+```
+
+
+## 2.3 Spatial Analysis with `spdep`
+
+One of the most commonly examined measures of spatial dependence is the Moran's I, which is easily executed using the weights created above:
+
+```{r}
+moran.test(pa$share.hispanic, continuity.listw)
+moran.plot(pa$share.hispanic, continuity.listw)
+```
+
+One can also calculate local Moran's I statistics for each polygon rather than just global values:
+
+```{r}
+result <- localmoran(pa@data$share.hispanic, continuity.listw)
+pa@data <- cbind(pa@data, result)
+
+spplot(pa, "Z.Ii")
+```
+
+## 2.4 Spatial Regressions and Tests
+
+### Diagnostics
+
+You can easily run the various Lagrange tests for spatial correction with one command once you have a weighting matrix:
+
+```{r}
+my.model <- lm(share.hispanic ~ PrCpInc, data=pa)
+
+lm.LMtests(my.model, continuity.listw, test="all")
+```
+
+### Alternate regressions
+
+And run the regression you decide you want almost as easily!
+
+```{r}
+# Spatial Auto-Regression Linear Model
+my.model.sar <- lagsarlm(share.hispanic ~ PrCpInc, data = pa, continuity.listw)
+
+# Error Auto-Regresive
+my.model.ear <- errorsarlm(share.hispanic ~ PrCpInc, data = pa, continuity.listw)
+```
+
+
+# 3. Spatial Interpolation
+
+Spatial interpolation is the process of using a set of observations of some attribute at specific points and attempts to interpolate the likely values between those points. There are a number of methods for spatial interpolation, including Inverse Distance Weighting (IDW), kernel density estimators, and Kriging, and many libraries for each. 
+
+The main library for this purpose is the `gstat` library, the full manual for which [you can find here.](http://www.gstat.org/gstat.pdf)
+
+A nice [tutorial on spatial interpolation can be found here.](https://rpubs.com/adam_dennett/46259)
+
+
+# 4. Bayesian Methods
+
+Though this author has not worked with theme, there are bayesian spatial libraries available for interested parties!
+
+
+* `spBayes`: Bayesian spatial statistical models using MCMC sampling
+* `ramps`: Bayesian spatial statistical models using RAMPS sampling
+
+
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.

@@ -1,0 +1,212 @@
+---
+title: "Web APIs and the Basics of Getting Internet Data"
+author: "Nick Eubank"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    theme: spacelab
+    mathjax: default
+    fig_width: 6
+    fig_height: 6
+---
+
+
+```{r knitr_init, echo=FALSE, cache=FALSE, message=FALSE,results="hide"}
+library(knitr)
+library(rmdformats)
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+
+
+```
+
+***
+
+This tutorial introduces the idea of a Web API -- a special way of getting information from services like google maps or twitter. Web APIs are often useful in GIS analysis for a number of tasks, like converting street addresses or town names into latitudes and longitudes, or downloading census data from R.  
+
+This tutorial also provides some background in the hopes of demystifying the API, whose name suggests a sophisticated tool that those with limited programming experience may find daunting, but which are often just stripped down versions of the web-pages you are used to using. 
+
+***
+
+
+# 1. Demystification
+
+It's no wonder most people think of APIs as a little mysterious and daunting. Ask most people what an API is and they will either give you a blank stare or say "why an Application Programming Interface, of course." And you can usually stump the person who said "an Application Programming Interface" by following-up your question with "but what's an Application Programming Interface?"
+
+This section provides an overview of APIs in general and Web APIs in particular. This is probably a little more background than is necessary for most purposes, but I have found that people tend to shy away from using APIs because they seem mysterious, and I'd like to help fight that conception. The idea of an API is actually to make your life simpler, and the concept of an API can be very powerful for understanding the modern world. 
+
+## 1.1 What is an API?
+
+API is an (uninformative) acronym for "Application Programming Interface". 
+
+It is often the case that a user working in one programming environment (like R) would like to take advantage of tools written in a different language. The goal of an API is to facilitate this by acting like as a cross between a translator and a messenger between two different programs.
+
+Let's us an example of an API that you are already quite familiar with, even if you didn't realize it. The `rgeos` library from the RGIS2 tutorial is actually just an API for a program called GEOS written in a language called C++. When people started realizing that they wanted to do GIS analysis in R, the realized that it didn't make sense to write a whole new set of tools in R for geometric operations when there was already a really sophisticated program written for this exact purpose. At the same time, however, they didn't want to require R users to export their data to the harddrive, open a different program in a language they might not know, use that program to execute a calculation, then re-import the data. 
+
+In steps the API, `rgeos`. When you use `rgeos`, here's what's really happening:
+
+* You tell `rgeos` -- in R -- what you would like to happen and give it the data you want to manipulate, 
+* `rgeos` translates those commands into commands that `GEOS` can understand,
+* `rgeos` converts your data to data that `GEOS` can use.
+* `GEOS` then does its analysis, and gives the results to `rgeos`. 
+* `rgeos` then converts those results back to R data, and gives it back to you!
+
+That's it. It's just a middle man who "speaks" both R and GEOS, and who's willing to run back and forth between these programs to make your life easier!
+
+(Wanna know a secret? Most good libraries in R are actually just APIs for libraries written in C++!)
+
+## 1.2 What is a Web API?
+
+A web API is just a special kind of API that stands between an internet browser and the servers of a company like Google or Twitter. It's job is to accept requests for data written in HTML, convert them into whatever language a company's servers use, get the result requested, and return it to the user in a format that's easy to work with. 
+
+This last point is key -- most of the time, what a Web API does is take a web-page you are familiar with (like google maps) and strip away everything that is distracting to a computer program, like nice pictures and fancy formatting. 
+
+### The Request
+
+The way your computer accesses information on the internet is by composing a request in the form of a web address, known formally as a URL. Most of the time, however, this happens without you know it. For example, if you type "42" into google and click search, the result just appears. But look in the address bar above, and you can see the exact code used to get you those search results, which is sometimes as simple as `https://www.google.com/#q=42` (though, depending on your computer, it may be much longer). Basically, when you click buttons in your browser, the browser converts your clicks into a URL and sends that request out to the internet. 
+
+With a Web API, we skip the step where a user clicks a button in the browser with their mouse, and instead just create customized URLs to ask for the data we need. This is a little less intuitive for humans, but is much easier for computers. 
+
+**URL Components**
+
+There are a couple specific components of most URLs, and understanding these components will be helpful for both web APIs, and in other situations like web-scraping. For example, consider the following link to a youtube video: [https://www.youtube.com/watch?v=dQw4w9WgXcQ](https://www.youtube.com/watch?v=dQw4w9WgXcQ).
+
+* **https** : This is the protocol you're saying you want to use to talk to the server. 
+* **www.youtube.com** : This is the server you want to pass your message to. 
+* **/watch** : is how you tell the computer the general type of request you're making (in this case, you want to go directly to a video). 
+* **?v=dQw4w9WgXcQ** : this is what's called a "Query String". 
+
+Query Strings are how you send extra information to an internet server. They generally start with a `?` or a `#`, and are followed by a number of variable-value pairs. In this case, for example, you're saying that you want youtube to know that in your request, the variable `v` has the value `dQw4w9WgXcQ`" (the internal name for this particular video). 
+
+So basically, this youtube link says: "Hey, Youtube -- I would like to access the program you keep in your `/watch` directory, and when you call that program, please tell it that the variable `v` should be set to `dQw4w9WgXcQ`." 
+
+In this way, a URL is a lot like a function call in R where the query string contains the arguments you are passing to the function!
+
+### The Response
+
+The main value of a Web API is that the response it provides to a query is written in a stripped-down format that's easy for a computer to understand. Consider the two following results provided by google maps for the search term "Kalamazoo, MI", one through google maps and one through the google maps API:
+
+![maps](images/maps_noapi.png)  ![API](images/maps_api.png)
+
+The figure on the left -- the "human-readable" result -- is easy to look at, but consider how hard it would be to tell a computer to zero in on the one piece of data you want and to ignore the map background, the Google Earth button, the photos from Kalamazoo, the various options for modifying the map, etc. 
+
+The figure on the right, by contrast, is just text, and is organized in a format (called JSON) that's very easy to convert into an R list or DataFrame. 
+
+
+## 1.3 Recap of APIs
+
+So, to recap:
+
+* **What is an API?** A tool that allows a user of one program to easily use a different program potentially in a different language. 
+* **What is a Web API?** A tool that allows users to make requests for data over the internet through carefully formatted URLs and to get responses that are easy to use, regardless of the system being used to actually manage that data on the server. 
+
+# 2. Web API Formats
+
+
+
+
+
+# 3. Specific APIs
+
+## 3.1 Google Maps Geo-Coder
+
+One of the most commonly used APIs for GIS work is the google maps geocoding API. Google maps takes any type of query you would type into Google Maps and returns information on Google's best guess for the latitude and longitude associated with your query. 
+
+### Forming a Query
+
+The syntax for a google maps geocoding API is quite simple, just query a URL of the form:
+
+`https://maps.googleapis.com/maps/api/geocode/output?parameters`
+
+where:
+* `output` is the format you want your results in, either `json` or `xml` (we'll talk more about that)
+* `parameters` is the Query String. [The full specification is given here](https://developers.google.com/maps/documentation/geocoding/intro), but the most common case is that you want to pass an argument called `address` followed by the term you would otherwise enter into google maps. For example:
++ `?address=1600+Pennsylvania+Avenue,+Washington,+DC`
+
+*** 
+
+Exercise 1: 
+
+#. Try it! Just open your browser and write a query for you house, or a favorite place. Use the "json" format. 
+
+#. Can you make sense of the output?
+
+***
+
+To make this kind of query in R, we'll use the `fromJSON` command in the `jsonlite` library to make the query and convert the result into a more straightforward R format. We'll talk more about JSON file formats below, but here we see that fromJSON converts the results to a DataFrame (actually, a list with one DataFrame called "results" and a simple vector called "status", but we only really care about the former). 
+
+```{r}
+library(jsonlite)
+
+url = "https://maps.googleapis.com/maps/api/geocode/json?address=1600+pennsylvania+avenue,+washington+dc"
+df <- fromJSON(url)$results
+df
+```
+
+In addition, we can use these tools to geocode a huge number of places from a DataFrame. Considering the following toy-data:
+
+
+```{r}
+library(dplyr)
+toy.data <- data.frame(addresses=c("denver, CO","881 7th Ave, New York, NY 10019", "Encina Hall, 616 Serra St, Stanford, CA 94305"))
+
+my.geocoder <- function(address){
+  address.no.spaces <- gsub(" ", "+", address)
+  url = paste0("https://maps.googleapis.com/maps/api/geocode/json?address=", address.no.spaces)
+  print(url)
+  fromJSON(url)$results
+}
+
+apply(toy.data, 1, my.geocoder)
+
+```
+
+
+
+### Quality
+
+One of the most important fields in the results you get from the google geo-coder is called "geometry.location_type" -- this tells you how precise google's guess is. In order of precision, [the possible values for this field are](https://developers.google.com/maps/documentation/geocoding/intro#results):
+
+* "ROOFTOP" indicates that the returned result is a precise geocode for which we have location information accurate down to street address precision.
+* "RANGE_INTERPOLATED" indicates that the returned result reflects an approximation (usually on a road) interpolated between two precise points (such as intersections). Interpolated results are generally returned when rooftop geocodes are unavailable for a street address.
+* "GEOMETRIC_CENTER" indicates that the returned result is the geometric center of a result such as a polyline (for example, a street) or polygon (region).
+* "APPROXIMATE" indicates that the returned result is approximate.
+
+
+### Wrappers!
+
+Congratulations! You've now queried a Web API 
+
+
+
+
+
+Although the google geocoding API operates by responding to specially crafted URLs with nicely formatted outputs, it turns out that someone has already written an API to the API (!) that will take an address, convert it to a URL, submit it to google, and process the result into an R DataFrame!
+
+
+
+```{r}
+library(ggmap)
+geocode(c("1600 Pennsylvania NW, Washington, DC", "denver, co"), source="google", output = "more")
+```
+
+## 2.2 US Census API
+
+
+
+# 3. Web-Formats
+
+OK, so what is JSON?
+
+
+
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
