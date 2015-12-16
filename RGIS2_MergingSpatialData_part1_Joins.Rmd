@@ -77,6 +77,15 @@ In this case, that means our merge would look like the following:
 worldCountries <- merge(worldCountries, countryData, by.x = "id-number", by.y = "countryID")
 ```
 
+**Important Note:** Always pass the `merge` command your Spatial\*DataFrame object. **Never** merge the `data.frame` associated with your Spatial\*DataFrame object directly, as in the following snippet:
+
+```{r eval=FALSE, tidy=FALSE}
+# DON'T DO THIS!
+worldCountries@data <- merge(worldCountries@data, countryData, by.x = "id-number", by.y = "countryID")
+```
+
+If `merge` is passed two `data.frames` instead of a `Spatial*DataFrame` and a `data.frame`, it may jumble the order of rows in the output data, corrupting your data. 
+
 That's it!
 
 ***
