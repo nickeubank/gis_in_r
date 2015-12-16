@@ -50,7 +50,7 @@ strikes.projected <- spTransform(strikes, dist.crs)
 
 ***
 
-When working with spatial data, one is rarely interested in working with only one source of data. This tutorial will introduce a set of tools for linking vector data with other data sources. It begins by introducing how to link spatial vector data with non-spatial data from in table format, then turns to the problem of linking multiple sources of spatial data through spatial joins and intersects. 
+When working with spatial data, one is rarely interested in working with only one source of data. This tutorial will introduce a set of tools for linking vector data with other data sources. It begins by introducing how to link spatial vector data with non-spatial data in table format, then turns to the problem of linking multiple sources of spatial data through spatial joins and intersects. 
 
 This tutorial uses the `sp`, `rgdal`, and `raster` libraries from the `RGIS1` tutorial. If you have not yet installed those, please revisit that tutorial for directions. In addition, this tutorial will also make use of the `rgeos` library, installation of which is discussed in `part0_setup`. 
 
@@ -58,7 +58,7 @@ This tutorial uses the `sp`, `rgdal`, and `raster` libraries from the `RGIS1` tu
 
 # 1.Spatial* + Non-Spatial
 
-An attribute join combines tabular data with a Spatial* object by associating each observation in a table with a GIS object (a polygon, line, or point). If you have done attribute joins of shapefiles in GIS software like _ArcGIS_ or _QGis_, or merged two datasets in _Stata_ or _R_, this process is analogous -- in an Attribute Join, a `Spatial*Dataframe` (be that a `SpatialPolygonsDataFrame`, `SpatialPointsDataFrame`, or `SpatialLinesDataFrame`) is merged with a table (an R dataframe) using a common _unique identifier_. 
+An attribute join combines tabular data with a Spatial* object by associating each observation in a table with a GIS object (a polygon, line, or point). If you have done attribute joins of shapefiles in GIS software like _ArcGIS_ or _QGis_, or merged two datasets in _Stata_ or _R_, this process is analogous -- in an Attribute Join, a `Spatial*Dataframe` (be that a `SpatialPolygonsDataFrame`, `SpatialPointsDataFrame`, or `SpatialLinesDataFrame`) is merged with a table (an R `data.frame`) using a common _unique identifier_. 
 
 Assume we have:
 
@@ -70,23 +70,12 @@ where:
 * _"id-number"_ is the colum that contains the unique identifier in _worldCountries_, and 
 * _"countryID"_ is the column that contains the unique identifier in _countryData_. 
 
-Then we can just merge worldCountries@data with countryData on those variables, with one small nuance: 
-
-**DO NOT MERGE YOUR DATA USING THE `merge` COMMAND!** 
-
-R keeps track of the relationship between rows in the attribute table an `Spatial*` shapes based on the order of observations in the attribute table. Unfortunately, the `merge` command can shuffle the order of rows in the attribute table, potentially jumbling the association of rows with Point/Line/Polygons.
-
-To avoid this problem, always use two rules when merging:
-* Use `join` from the `plyr` library with the `type="left"` argument
-* Also place the DataFrame associated with your `Spatial*` object in the first position. 
+Then we can just merge worldCountries with countryData on those variables, using the `merge` method in `sp`:
 
 In this case, that means our merge would look like the following:
 ```{r eval=FALSE, tidy=FALSE}
-library(plyr)
-worldCountries@data <- join(worldCountries@data, countryData, by = c("id-number" = "countryID"), type = "left")
+worldCountries <- merge(worldCountries, countryData, by.x = "id-number", by.y = "countryID")
 ```
-
-(FYI: `type="left"` is the same as using the `all.x=TRUE`  and `all.y=FALSE` options for `merge` -- it keeps all rows of the DataFrame in the first position and only matching rows of the second.)
 
 That's it!
 
@@ -102,7 +91,7 @@ That's it!
 
 #. Check out the column names of `vote_shares` and of `districts` to determine which one might contain the unique identifier for the join. Hint: use the `names()` command.
 
-#. Join the `vote_shares` data frame with `districts` using `join` as described above. Use the `names()` command to see if the join was successful.
+#. Join the `vote_shares` data frame with `districts` using `merge` as described above. Use the `names()` command to see if the join was successful.
 
 #. Now we could plot one of the variables we just joined - try democratic vote share!
 
@@ -122,21 +111,21 @@ Combining different Spatial* data sources is one of the most common things you w
 Most of the time, you answer these questions using some form of Spatial Join. Unlike the "Attribute Joins" described above, a spatial join in your first purely spatial operation. In a spatial join, observations from different datasets are joined based not on a variable, but by their relationship in space.
 
 ## 2.1 Managing Coordinate Reference Systems (CRS)
-To combine two Spatial* datasets, the first thing you have to do is make sure they have the same CRS. If you try and work with two Spatial* objects in R that are not in the same CRS, you *will* get results, but those results will be nonsense! **Note that this is very different from programs like ArcGIS that will take care of this problem for you!** So before we can join Spatial* objects, we need to learn to re-project different data sources into a common CRS. 
+To combine two Spatial* datasets, the first thing you have to do is make sure they have the same CRS. If you try and work with two Spatial* objects in R that are not in the same CRS, you *will* get results, but those results will be nonsense! **Note that this is very different from programs like ArcGIS that will take care of this problem for you!** So before we can join Spatial* objects, we need to learn how to re-project different data sources into a common CRS. 
 
 Make sure you remember the differences between *defining* a CRS and re-projecting:
 
-* **Defining a projection** is when the user tells the computer how it should *interpret* the x-y coordinates associated with a `Spatial*` object. For example, if data comes from a GPS device, one must tell the computer those x-y coordinates are latitudes and longitudes. It does not change the values of the numbers, just how the computer interprets them. 
-* **Re-projecting** is when you tell the computer to *convert* coordinates from one representation (like latitude and longitude) to another (like meters from some fixed reference point). It changes not just the `proj4string` associated with an object, but also all the actual x-y coordinates.  
+* **Defining a projection** is when the user tells the computer how it should *interpret* the x-y coordinates associated with a `Spatial*` object. For example, if data comes from a GPS device, one must tell the computer those x-y coordinates are longitudes and latitudes. It does not change the values of the numbers, just how the computer interprets them. 
+* **Re-projecting** is when you tell the computer to *convert* coordinates from one representation (like longitude and latitude) to another (like meters from some fixed reference point). It changes not just the `proj4string` associated with an object, but also all the actual x and y coordinates.  
 
-Re-projecting vector data requires two tools, both in the `sp` package:
+Re-projecting vector data requires two tools from the `sp` and `rgdal` packages:
 
 * a Coordinate Reference System `CRS` object with the new CRS you wish to apply
-* the `spTransform()` function
+* the `spTransform()` method
 
 As previously noted, a CRS object includes all the information needed to project a spatial object, generally including both a Geographic Coordinate System (the model of the Earth used to create the data) and a projection (a way of converting points on the three-dimensional Earth onto a two-dimensional plane).
 
-The CRS() function has access to a large library of coordinate systems and transformations, so you just need to know the code for the CRS you want. Codes -- often called a "projection strings" -- can be found [online here](http://www.spatialreference.org).
+Through package `rgdal`, the CRS() function has access to a large library of coordinate systems and transformations, so you just need to know the code for the CRS you want. Codes -- often called a "projection strings" -- can be found [online here](http://www.spatialreference.org).
 
 Once you've found the projection you want, you can create the appropriate CRS object using one of two codes -- the `proj4` string, or the `EPSG` code. These are equivalent, but look a little different.  
 
@@ -225,16 +214,17 @@ head(grants.with.districts2)
 
 A few caveats:
 * By default, `over` will return the *first* item in the TARGET that intersects with an item in SOURCE if there are multiple items. 
-* `over` cannot handle intersection two `SpatialPolygons`
+* `over` can only handle intersection of two `SpatialPolygons` objects after package `rgeos` has been loaded.
+* more details are found in [this](https://cran.r-project.org/web/packages/sp/vignettes/over.pdf) document
 
 
 **Multiple Intersections**
 
 By default, when there are multiple TARGET observations that intersect a SOURCE observation, `over` will just return the first one. There are two ways to address this. 
 
-### Multiple Intersections Option 1: `returnList`
+### Multiple Intersections Option 1: `returnList = TRUE`
 
-`over` normally returns a vector, which can only have one item per row. However, if you pass the argument `returnList=TRUE`, `over` will return a named list, where:
+`over` normally returns a vector, which can only have one item per row. However, if you pass the argument `returnList = TRUE`, `over` will return a named list, where:
 * The name for each list entry is the index of the SOURCE observation
 * The contents are the indices of all items in the TARGET that intersect the SOURCE observation 
 
@@ -242,7 +232,7 @@ Once you have this list, you can compute on it with tools like `sapply`.
 
 Here's an example with just indices of intersecting TARGET observations:
 ```{r overlist}
-over.list <- over(districts,geometry(grants.newproj),returnList=TRUE)
+over.list <- over(districts, geometry(grants.newproj), returnList = TRUE)
 over.list
 ```
 
@@ -253,24 +243,35 @@ districts@data <- cbind(districts@data, num.grants)
 districts@data
 ```
 
-Here's an example where one gets back the relevant DataFrame rows of intersecting TARGET observations. 
+Here's an example where one gets back the relevant `data.frame` rows of intersecting TARGET observations. 
 ```{r}
-over(districts,grants.newproj,returnList=TRUE)
+over(districts, grants.newproj, returnList = TRUE)
 ```
 
 
-### Multiple Intersections Option 2: `fn`
+### Multiple Intersections Option 2: `fn` or `aggregate`
 
-However, if the second argument has a DataFrame associated with it, it is possible to ask `over` to aggregate the variables associated with intersecting TARGET observations. 
+However, if the second argument has a `data.frame` associated with it, `over` can be instructed to aggregate the variables associated with intersecting TARGET observations. 
 
 For example, we can use this to get the average value of grants in each district:
 
 ```{r}
-over(districts,grants.newproj[,'GrantBudge'], fn=mean)
+over(districts, grants.newproj[,'GrantBudge'], fn=mean)
+```
+
+Since we are now aggregating `GrantBudge` values in `grants.newproj` by `districts`, we can also use the `aggregate` method in `sp` for spatial aggregation, which in addition to the `over` command above returns a `Spatial*` object:
+
+```{r}
+aggregate(grants.newproj[,'GrantBudge'], districts, mean)
 ```
 
 If we had other information on food trucks -- like their value -- we could also ask for things like their mean value by passing the `mean` function. 
 
+Note that `over` selects anything that intersects, including polygons that only touch each other. When working with two polygon sets, it makes often more sense to apply area weighting, where weights are proportional to the amount of overlap. This is obtained by
+
+```{r, eval=FALSE}
+aggregate(polygons_A, polygons_B, mean, areaWeighted = TRUE)
+```
 
 ## Exercise 2
 

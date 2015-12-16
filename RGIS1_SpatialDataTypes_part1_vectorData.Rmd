@@ -35,14 +35,14 @@ opts_knit$set(width=75)
 
 ***
 
-Welcome to Spatial Data in R! This first set of tutorials (in three parts) is designed to provide an introduction to the two types of spatial data you will encounter in R: vector data and rasters. By the end of this tutorial, you should have a good sense of how R thinks about spatial data, and how to import and export spatial datasets you may get from other programs or sources.
+Welcome to Spatial Data in R! This first set of tutorials (in three parts) is provides an introduction to the two types of spatial data you will encounter in R: vector data and raster data. By the end of this tutorial, you should have a good sense of how R thinks about spatial data, and how to import and export spatial datasets you may get from other programs or sources.
 
 
 ***
 
 
 ## 1 Spatial Data in R: Building Objects from Scratch!
-Almost all spatial vector data structures in R are based on the `sp` package. Even other libraries that may seem independent are usually built on top `sp`, even if you can't see it.
+Almost all spatial vector data structures in R are based on the `sp` package. Even other libraries that may seem independent are usually built on top of `sp`, even if you can't see it.
 
 The `sp` package has three main types of spatial data we'll work with: points, lines, and polygons. There are some differences between these different types, but they are all very similar.
 
@@ -98,13 +98,13 @@ coordinates(my.first.points)
 
 #### Add a Coordinate Reference System (CRS)
 
-Unlike a simple geometric object, a `SpatialPoints` object has the ability to keep track of how the coordinates of its points relate to places in the real world through an associated "Coordinate Reference System" (CRS -- the combination of a geographic coordinate system and a projection), which is stored using a code called a `proj4string`. The proj4string is so important to a `SpatialPoints` object, that it's presented right in the summary:
+Unlike a simple geometric object, a `SpatialPoints` object has the ability to keep track of how the coordinates of its points relate to places in the real world through an associated "Coordinate Reference System" (CRS -- the combination of a geographic coordinate system and possibly a projection), which is stored using a code called a `proj4string`. The proj4string is so important to a `SpatialPoints` object, that it's presented right in the summary:
 
 ```{r}
 summary(my.first.points)
 ```
 
-In this case, however, while our `SpatialPoints` object clearly knows what a CRS *is*, the Spatial object we just created __does not__ have a projection or geographic coordinate system defined. It is ok to plot, but be aware that for any meaningful spatial operation you will need to define a CRS. 
+In this case, however, while our `SpatialPoints` object clearly knows what a CRS *is*, the Spatial object we just created __does not__ have a projection or geographic coordinate system defined. It is ok to plot, but be aware that for many meaningful spatial operations you will need to define a CRS. 
 
 CRS objects can be created by passing the `CRS()` function the code associated with a known projection. You can find the codes for most commonly used projections from [www.spatialreference.org](www.spatialreference.org). 
 
@@ -122,12 +122,24 @@ is.projected(my.first.points)
 summary(my.first.points)
 ```
 
+When `CRS` is called with only an EPSG code, R will try to complete the CRS with the parameters looked up in the EPSG table:
+```{r}
+crs.geo <- CRS("+init=EPSG:32633")  # looks up UTM 33N
+crs.geo # prints all parameters
+```
+
 We'll talk more about managing projections in the next lesson. 
+
+Geometry-only objects (objects without attributes) can be subsetted similar to how vectors or lists are subsetted; we can select the first two points by 
+
+```{r}
+my.first.points[1:2]
+```
 
 
 #### Add Attributes
 
-Moving from a `SpatialPoints` to a `SpatialPointsDataFrame` occurs when you add a DataFrame of attributes to the points. Let's just add an arbitrary table to the data -- this will label each point with a letter and a number. **Note points will merge with the DataFrame based on the order of observations.** 
+Moving from a `SpatialPoints` to a `SpatialPointsDataFrame` occurs when you add a `data.frame` of attributes to the points. Let's just add an arbitrary table to the data -- this will label each point with a letter and a number. **Note points will merge with the `data.frame` based on the order of observations.** 
 
 ```{r}
 df <- data.frame(attr1 = c('a','b','z','d','e','q','w','r','z'), attr2 = c(101:109))
@@ -139,17 +151,18 @@ my.first.spdf <- SpatialPointsDataFrame(my.first.points, df)
 summary(my.first.spdf)
 ```
 
-Now that we have attributes, we can also subset our data the same way we would subset a DataFrame. Some subsetting:
+Now that we have attributes, we can also subset our data the same way we would subset a `data.frame`. Some subsetting:
 ```{r}
 my.first.spdf[1:2, ]        # row 1 and 2 only
-plot(my.first.spdf[which(my.first.spdf$attr2>105),])    # select if attr2 > 5
+my.first.spdf[1:2, "attr1"] # row 1 and 2 only, attr1
+plot(my.first.spdf[which(my.first.spdf$attr2 > 105),])    # select if attr2 > 5
 ```
 
 ***
 
-#### SpatialPoint from a lat/lon table
+#### SpatialPoint from a lon/lat table
 
-A `SpatialPointsDataFrame` object can be created directly from a DataFrame by specifying which columns contain the coordinates. This is interesting, for example if you have a spreadsheet that contains latitude, longitude and some values. You can read this into a data frame with `read.table`, and then create the object from the data frame in one step by using the `coordinates()` command. That automatically turns the dataframe object into a `SpatialPointsDataFrame`.
+A `SpatialPointsDataFrame` object can be created directly from a `data.frame` by specifying which columns contain the coordinates. This is interesting, for example if you have a spreadsheet that contains latitude, longitude and some values. You can read this into a data frame with `read.table`, and then create the object from the data frame in one step by using the `coordinates()` command. That automatically turns the dataframe object into a `SpatialPointsDataFrame`.
 
 ***
 #### Exercise 1.1
@@ -164,9 +177,9 @@ A `SpatialPointsDataFrame` object can be created directly from a DataFrame by sp
 
     `coordinates(sf.df) <- c("longitude", "latitude")`
 
-**Note the reverse order! While we usually say "latitude and longitude", since longitude corresponds to the x-coordinates on a map and latitude corresponds to the y-coodinates and R likes coordinates to be ordered (x,y), we pass `c("longitude","latitude")`!**
+**Note the reverse order! While we usually say "latitude and longitude", since longitude corresponds to the x-coordinates on a map and latitude corresponds to the y-coodinates and R assumes coordinates to be ordered (x,y), we pass `c("longitude","latitude")`!**
 
-8. Use `class()`again to examine which object class the table belongs to now:  
+8. Use `class()` again to examine which object class the table belongs to now:  
 What to you observe?
 
 9. Plot restaurants with terrible scores by subsetting on `Score` and using the `plot` command. 
@@ -188,7 +201,7 @@ To get a `SpatialPolygons` object, we have to build it up by (a) creating `Polyg
 * A `Polygons` object consists of one *or more* simple geometric objects (`Polygon` objects) that combine to form what you think of as a single unit of analysis (an "observation"). For example, each island in Hawaii would be a `Polygon`, but Hawaii itself is the `Polygons` consisting of all the individual island `Polygon` objects. 
 * A `SpatialPolygons` object is a collection of `Polygons` objects, where each `Polygons` object is an "observation". For example, if we wanted a map of US states, we would make a `Polygons` object for each state, then combine them all into a single `SpatialPolygons`. If you're familiar with shapefiles, `SpatialPolygons` is basically the R analogue of a `shapefile` or `layer`. 
 
-**One special note:** if you want to put a hole in a polygon (e.g. drawing a donut, or if you wanted to draw South Africa and leave a hole in the middle for Lesotho) you do so by (a) creating a `Polygon` object for the outline, (b) creating a second `Polygon` object for the hole and passing the argument `hole=True`, and (c) combine the two into a `Polygons` object. 
+**One special note:** if you want to put a hole in a polygon (e.g. drawing a donut, or if you wanted to draw South Africa and leave a hole in the middle for Lesotho) you do so by (a) creating a `Polygon` object for the outline, (b) creating a second `Polygon` object for the hole and passing the argument `hole=TRUE`, and (c) combine the two into a `Polygons` object. 
 
 Let's try building up a `SpatialPolygon`!
 
@@ -231,10 +244,10 @@ plot(houses)
 ```
 
 #### Adding Attributes to SpatialPolygon
-As with SpatialPoints, we can associated a DataFrame with SpatialPolygons. There are two things that are important about doing this with SpatialPolygons:
+As with SpatialPoints, we can associated a `data.frame` with SpatialPolygons. There are two things that are important about doing this with SpatialPolygons:
 
-1. When you **first** associate a DataFrame to with a SpatialPolygons, R will line up rows and polygons by matching `Polygons` object names with the DataFrame `row.names`. 
-2. After the initial association, this relationship is **NO LONGER** based on row.names! For the rest of the `SpatialPolygonsDataFrame`'s life, the association between `Polygons` and rows of your DataFrame is based on the order of rows in your DataFrame, so don't change the order of the DataFrame by hand!
+1. When you **first** associate a `data.frame` with a SpatialPolygons object, R will line up rows and polygons by matching `Polygons` object names with the `data.frame` `row.names`. 
+2. After the initial association, this relationship is **NO LONGER** based on row.names! For the rest of the `SpatialPolygonsDataFrame`'s life, the association between `Polygons` and rows of your `data.frame` is based on the order of rows in your `data.frame`, so don't try to change the order of the `data.frame` by hand!
 
 Make attributes and plot. Note how the door -- which we created with `hole=TRUE` is empty!
 ```{r}
@@ -248,7 +261,7 @@ spplot(houses.DF)
 ```
 
 #### Adding a Coordinate Reference Systems (CRS)
-As with `SpatialPoints`, a `SpatialPolygons` doesn't actually know where it is in space until you give it a Coordinate Reference System, which you can do the same way you did with the `SpatialPoints` objects. 
+As with `SpatialPoints`, a `SpatialPolygons` object on Earth doesn't actually know where it until you set its Coordinate Reference System, which you can do the same way you did with the `SpatialPoints` objects: 
 
 ```{r eval=FALSE}
 crs.geo <- CRS("+init=EPSG:4326")  # geographical, datum WGS84
@@ -285,7 +298,7 @@ Here's a quick summary of the construction flow of SpatialObjects:
 
 ## 2. Importing and Exporting Spatial Data using `rgdal`
 
-Normally we do not create `Spatial*` objects by hand. It is much more common to work with existing data, like shapefiles, for external sources. 
+Normally we do not create `Spatial*` objects by hand. It is much more common to work with existing data read from external sources like shapefiles, or databases. 
 
 In order to read those into R and turn them into `Spatial*` family objects we rely on the `rgdal` package. It provides us direct access to the powerful [GDAL library](http://gdal.org) from within R. 
 
@@ -293,7 +306,7 @@ We can read in and write out spatial data using:
 
 `readOGR()` and `writeOGR()`
 
-The parameters provided for each function varies depending on the exact spatial file type you are reading. We will take a the ESRI shapefile as an example. A shapefile - as you know - consists of various files, and R expects all those files to be in one directory. 
+The parameters provided for each function varies depending on the exact spatial file type you are reading. We will take the ESRI shapefile as an example. A shapefile - as you know - consists of various files, and R expects all those files to be in one directory. 
 
 When reading in a shapefile, `readOGR()` expects at least the following two arguments:
 
@@ -350,7 +363,7 @@ coordinates(my.first.spdf)
 my.first.spdf@coords
 ```
 
-In R, the items with `@` at the start of the line are called "slots". If you are used to working in another object-oriented language like Java or Python, these are analogous to attributes. You can access each of these "slots" using the `@` operator, making them equivalent of some function calls. 
+In R, the items with `@` at the start of the line are called "slots". If you are used to working in another object-oriented language like Java or Python, these are analogous to attributes. You can access each of these "slots" using the `@` operator, making them equivalent of some function calls. It is a general recommendation to not modify slots by directly assigning values to them unless you know very well what you do.
 
 
 **Answers to Exercise 1.2**

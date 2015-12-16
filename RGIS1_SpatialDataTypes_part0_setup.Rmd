@@ -35,13 +35,13 @@ opts_knit$set(width=75)
 
 ***
 
-Welcome to Spatial Data in R! This first set of tutorials (in three parts) is designed to provide an introduction to the two types of spatial data you will encounter in R: vector data and rasters. By the end of this tutorial, you should have a good sense of how R thinks about spatial data, and how to import and export spatial datasets you may get from other programs or sources.
+Welcome to Spatial Data in R! This first set of tutorials (in three parts) is designed to provide an introduction to the two types of spatial data you will encounter in R: vector data and raster data. By the end of this tutorial, you should have a good sense of how R thinks about spatial data, and how to import and export spatial datasets you may get from other programs or sources.
 
 ***
 
 ## 1. Updating R and Getting RStudio
 
-* It's best the everyone works with the same version of R to avoid problems, so please start by updating your installation of R to 3.2.2 ("Fire Safety"). [Installers for R 3.2.2 can be found at here.](http://cran.cnr.berkeley.edu/)
+* It's best the everyone works with the same version of R to avoid problems, so please start by updating your installation of R to 3.2.3 ("Wooden Christmas-Tree"). [Installers for R 3.2.3 can be found here.](http://cran.cnr.berkeley.edu/)
 
 * Download the most recent version of [RStudio here](https://www.rstudio.com/products/rstudio/download/). RStudio has recently added some very nice features (like tab completion), so please update if you have an older version. 
 
@@ -50,14 +50,14 @@ Welcome to Spatial Data in R! This first set of tutorials (in three parts) is de
 
 Next, we need to install some libraries. In this tutorial, we will work with three libraries: 
 
-* `sp`: vector data library
+* `sp`: for working with vector data,
 * `rgdal`: for importing and exporting vector data from other programs, 
 * `raster`: for working with raster data
 
 
 __On Windows:__
 
-Just run: `install.packages(c("sp","raster","rgdal"))`
+Just run: `install.packages(c("sp", "raster", "rgdal"))`
 
 __On Mac:__
 
@@ -65,7 +65,7 @@ __On Mac:__
 
 2. Doubleclick and install the `.dmg` file as you are used to on a Mac
 
-3. Make sure you have R Version 3.2.2 installed -- if not update it.
+3. Make sure you have R Version 3.2.3 installed -- if not update it.
 
 4. Download the [rgdal](https://cran.r-project.org/bin/macosx/mavericks/contrib/3.2/rgdal_1.0-4.tgz) package from CRAN.
 
