@@ -110,6 +110,8 @@ CRS objects can be created by passing the `CRS()` function the code associated w
 
 Note that the same CRS can often be called in many ways. For example, one of the most commonly used CRS is the WGS84 latitude-longitude projection. You can create a WGS84 lat-long projection object by either passing the reference code for the projection --  `CRS("+init=EPSG:4326"`) -- or by directly calling all its relevant parameters -- `CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")`.
 
+**Note:** Some users report this only works if `EPSG` is lower-case (`epsg`), so try that if you have issues!
+
 Here's an illustration of assigning a CRS:
 
 ```{r}
