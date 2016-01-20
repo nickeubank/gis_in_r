@@ -258,7 +258,7 @@ attr <- data.frame(attr1=1:2, attr2=6:5, row.names=c("house2", "house1"))
 
 ```{r}
 houses.DF <- SpatialPolygonsDataFrame(houses, attr)
-houses.DF@data      # Notice the rows were re-ordered!
+as.data.frame(houses.DF)      # Notice the rows were re-ordered!
 spplot(houses.DF)
 ```
 
@@ -337,15 +337,13 @@ readOGR("shapefiles", "sf_incomes")
 3. Read `sf_income` into an object called `sf`. Make sure you understand the directory structure.
 4. Examine the file, for example with `summary()`, `class()`, `str("sf", max.level = 2)`, 
 5. Take a look at the column names of the attribute data with `names(sf)`
-6. Take a look at the attribute data with `head(sf@data)`
+6. Take a look at the attribute data with `head(as.data.frame(sf))`
 7. Note that subsetting works here: `sf[sf$MdIncHH > 40000,]` 
 8. Plot some attribute data: `spplot(sf, "MdIncHH")`
 
 ***
 
 # 3. OPTIONAL: Understanding Spatial* Objects
-
-Remember when we got the data of a Spatial* object using the `@` operator? What was that?
 
 Turns out Spatial* objects are just a collection of things that you can see using the `str` command:
 
@@ -363,6 +361,12 @@ my.first.spdf@bbox
 ```{r}
 coordinates(my.first.spdf)
 my.first.spdf@coords
+```
+
+
+```{r}
+as.data.frame(my.first.spdf)
+my.first.spdf@data
 ```
 
 In R, the items with `@` at the start of the line are called "slots". If you are used to working in another object-oriented language like Java or Python, these are analogous to attributes. You can access each of these "slots" using the `@` operator, making them equivalent of some function calls. It is a general recommendation to not modify slots by directly assigning values to them unless you know very well what you do.
