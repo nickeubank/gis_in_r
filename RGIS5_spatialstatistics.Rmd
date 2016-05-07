@@ -144,8 +144,10 @@ moran.plot(pa$share.hispanic, continuity.listw)
 One can also calculate local Moran's I statistics for each polygon rather than just global values:
 
 ```{r}
-result <- localmoran(pa@data$share.hispanic, continuity.listw)
-pa@data <- cbind(pa@data, result)
+library(maptools)
+result <- localmoran(pa$share.hispanic, continuity.listw)
+
+pa <- spCbind(pa, as.data.frame(result))
 
 spplot(pa, "Z.Ii")
 ```

@@ -282,7 +282,7 @@ my.palette <- c("red", "blue")
 point.size <- 0.5
 
 # Make sure stored as a factor 
-dots.all@data$ethnicity <- as.factor(dots.all@data$ethnicity)
+dots.all$ethnicity <- as.factor(dots.all$ethnicity)
 
 
 # Make sp.layout list for the actually boundaries
@@ -381,7 +381,7 @@ sp.raster <- list("grid.raster", gmap, x = long.center, y = lat.center, width = 
 # NORMAL PLOTTING TRICKS - HAVE FUN HERE!
 
 # Housecleaning and set colors
-to.plot.web.merc@data$ethnicity <- as.factor(to.plot.web.merc@data$ethnicity)
+to.plot.web.merc$ethnicity <- as.factor(to.plot.web.merc$ethnicity)
 
 my.palette <- c("red", "blue")
 point.size <- 0.5
@@ -416,13 +416,14 @@ I am not a frequent `ggplot` user, so I'll just include some workable code (take
 library(ggplot2)
 
 # create a unique ID for the later join
-palo_alto@data$id = rownames(palo_alto@data)
+palo_alto$id = rownames(as.data.frame(palo_alto))
+
 
 # turn SpatialPolygonsDataframe into a data frame
 # (note that the rgeos library is required to use fortify)
 
 palo_alto.pts <- fortify(palo_alto, region="id") #this only has the coordinates
-palo_alto.df <- join(palo_alto.pts, palo_alto@data, by="id", type='left') # add the attributes back 
+palo_alto.df <- merge(palo_alto.pts, palo_alto, by="id", type='left') # add the attributes back 
 
 
 # calculate even breaks breaks

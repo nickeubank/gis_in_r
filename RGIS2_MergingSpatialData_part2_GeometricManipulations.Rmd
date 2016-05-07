@@ -250,14 +250,15 @@ Now you can use this reformated data to merge with the original data on district
 ```{r}
 
 # Move the rownames (which form the ids) into a column for merging
-districts@data$id2 <- rownames(districts@data)
-districts@data <- join(districts@data, result, by="id2", type="left")
+districts$id2 <- rownames(as.data.frame(districts))
+districts <- merge(districts, result, by="id2", type="left")
+as.data.frame(districts)
 ```
 
 Now we can calculate the share of each district within 7km!
 
 ```{r}
-districts@data$area_near_grants / districts@data$Shape_Area
+districts$area_near_grants / districts$Shape_Area
 ```
 
 
@@ -357,9 +358,9 @@ colnames(new.id.columns) <- c("id1", "id2")
 # Now your results are a data.frame with separate columns for each id component!
 result <- cbind(result, new.id.columns)
 
-fata@data$id2 <- rownames(fata@data)
+fata$id2 <- rownames(as.data.frame(fata))
 
-fata@data <- join(fata@data, result, by="id2", type="left")
+fata <- merge(fata, result, by="id2", type="left")
 
 #######
 # Calculate share of area within strike buffer
@@ -369,9 +370,9 @@ fata@data <- join(fata@data, result, by="id2", type="left")
 # of a strike, there were no `intersection` polygons. Thus when we 
 # merge our data, we get missing for area near strikes. These need to be zeros. 
 
-fata@data[is.na(fata@data$area_near_strikes),"area_near_strikes"]<-0
-fata@data$share_covered <- fata@data$area_near_strikes / fata@data$Shape_Area
-fata@data$share_covered
+fata[is.na(fata$area_near_strikes),"area_near_strikes"]<-0
+fata$share_covered <- fata$area_near_strikes / fata$Shape_Area
+fata$share_covered
 
 # Only for 2012: add: 
 #       strikes <- strikes[strikes$year == 2012,]

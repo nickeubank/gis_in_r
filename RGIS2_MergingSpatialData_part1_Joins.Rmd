@@ -205,13 +205,16 @@ The exact behavior of `over` depends on the inputs being used, but the basic ide
 For example, if for every grant (SOURCE) I wanted to get information about their district (TARGET), I could run:
 
 ```{r}
+library(maptools)
 grants.districts <- over(grants.newproj, districts) # Get district data
 grants.districts
 
 # Recombine!
-grants.newproj@data <- cbind(grants.newproj@data, grants.districts)
-grants.newproj@data
+grants.newproj <- spCbind(grants.newproj, grants.districts)
+grants.newproj
 ```
+
+Note the use of the `spCbind` command from the `maptools` library for merging the datasets -- this can also be accomplished without the `maptools` library by simple assignment of each vector of data.
 
 Note that because `districts` is a `SpatialPolygonDataFrame`, `over` returned the relevant row of data for each point. If `districts` did not have any data, we would just get the index of the intersecting polygon for each grant. We can see this behavior if we use the `geometry()` function to strip away the DataFrame:
 
@@ -247,9 +250,10 @@ over.list
 
 Then you can process these down (say, to get the number of each) and merge back in:
 ```{r}
+library(maptools)
 num.grants <- sapply(over.list, length)
-districts@data <- cbind(districts@data, num.grants)
-districts@data
+districts <- spCbind(districts, num.grants)
+districts
 ```
 
 Here's an example where one gets back the relevant `data.frame` rows of intersecting TARGET observations. 
@@ -368,18 +372,18 @@ par(new=F)
 
 
 # Look at data
-head(strikes.projected@data)
+head(strikes.projected)
 
 # Number per district
 over.list <- over(pk.dist,geometry(strikes.projected),returnList=TRUE)
 num.strikes <- sapply(over.list, length)
-pk.dist@data <- cbind(pk.dist@data, num.strikes)
-pk.dist@data[pk.dist@data$num.strikes != 0,]
+pk.dist <- spCbind(pk.dist, num.strikes)
+pk.dist[pk.dist$num.strikes != 0,]
 
 # Avg Fatality
 avg.fatality <- over(pk.dist,strikes.projected[c("Killed","CiviliansK")],fn=mean)
-pk.dist@data <- cbind(pk.dist@data, avg.fatality)
-pk.dist@data[!is.na(pk.dist@data$Killed),]
+pk.dist <- spCbind(pk.dist, avg.fatality)
+pk.dist[!is.na(pk.dist$Killed),]
 
 ```
 
@@ -395,12 +399,12 @@ pk.dist.rasterproj <- spTransform(pk.dist, new.crs)
 
 pops <- extract(pk.pop,pk.dist.rasterproj)
 pops.summed <- sapply(pops,sum)
-pk.dist.rasterproj@data <- cbind(pk.dist.rasterproj@data, pops.summed)
+pk.dist.rasterproj <- spCbind(pk.dist.rasterproj, pops.summed)
 
-pk.dist.rasterproj@data$strikes.percap <- 
-  pk.dist.rasterproj@data$num.strikes / pk.dist.rasterproj@data$pops.summed
+pk.dist.rasterproj$strikes.percap <- 
+  pk.dist.rasterproj$num.strikes / pk.dist.rasterproj$pops.summed
 
-head(pk.dist.rasterproj@data[pk.dist.rasterproj@data$num.strikes >0,])
+head(pk.dist.rasterproj[pk.dist.rasterproj$num.strikes >0,])
 ```
 
 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.

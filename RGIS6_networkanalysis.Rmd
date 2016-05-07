@@ -198,11 +198,10 @@ coordinates(spatial.data) <- c("x", "y")
 plot(spatial.data)
 
 # Merge in memberships
-library(plyr)
-spatial.data@data <- join(spatial.data@data, network.result, by ="name", type = "left")
+spatial.data <- merge(spatial.data, network.result, by ="name", type = "left")
 my.palette <- c("red", "blue")
 
-spplot(spatial.data, "group_assignment", col.regions=my.palette, cex=3, cuts=2)
+spplot(spatial.data, "group_assignment", col.regions=my.palette, cex=3)
 ```
 
 ***
@@ -239,18 +238,18 @@ names(result) <- c("STUSPS", "community")
 
 # Clean up states
 states <- readOGR(dsn="RGIS6_data/state_shapefile", layer="states")
-states <- states[as.numeric(as.character(states@data$STATEFP)) < 59,]
+states <- states[as.numeric(as.character(states$STATEFP)) < 59,]
 states <- spTransform(states, CRS("+init=EPSG:5070"))
 
 # Merge
-library(plyr)
-states@data <- join(states@data, result, by = c("STUSPS"), type="left")
+
+states <- merge(states, result, by = c("STUSPS"), type="left")
 ```
 
 ```{r, echo=FALSE, results=FALSE}
 library(rgeos)
 states_simplified <- gSimplify(states, 10000)
-data.copy <- states@data
+data.copy <- as.data.frame(states)
 rownames(data.copy) <- getSpPPolygonsIDSlots(states) 
 states <- SpatialPolygonsDataFrame(states_simplified, data.copy)
 ```
