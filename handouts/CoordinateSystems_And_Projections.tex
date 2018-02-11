@@ -29,12 +29,13 @@
 \usepackage{multicol}
 \setlength{\columnsep}{1cm}
 \usepackage{enumitem}
+\usepackage{ccicons}
 \setlist[itemize]{noitemsep, topsep=0pt}
 \setlist[enumerate]{noitemsep, topsep=0pt}
 \usepackage[margin=2.5cm]{geometry}
 
 \title{Where on Earth are We? \\ Projections and Coordinate Reference Systems}
-\author{Nick Eubank}
+\author{Nick Eubank\footnote{\href{mailto:nick@nickeubank.com}{nick@nickeubank.com}. Distributed Under a \href{https://creativecommons.org/licenses/by-nc/4.0/}{Creative Commons Attribution - Non-Commercial License \ccbync}}}
 \date{\today}
 
 \begin{document}
@@ -156,4 +157,5 @@ Remember: when re-projecting (unlike defining), there is no such thing as the ``
 	\item Terms like ``projection'' often refer to Flattening Functions, but sometimes also include a Globe Model.
 	\item When \emph{defining your Globe Model and Flattening Function}, it is your responsibility to determine the ``correct'' parameters based on what was used to generate the data.
 	\item When \emph{re-projecting} data, there is \textbf{\emph{never}} an objectively correct set of parameters, and it is your job to choose one that fits your application.
+\end{enumerate}
 \end{document}
