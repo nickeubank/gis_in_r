@@ -43,6 +43,9 @@ Thumbs.db
 *.log
 *.synctex.gz
 *.lb
+*.fls
+*.fdb_latexmk
+
 
 # R Markup Cache files #
 ####################
